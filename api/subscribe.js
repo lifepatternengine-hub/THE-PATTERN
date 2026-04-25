@@ -1,10 +1,18 @@
 // Vercel Node.js serverless function — POST /api/subscribe
-// Validates email, saves to Notion (optional), sends confirmation email via Resend (optional).
+// Double opt-in: signs a stateless token, emails a confirmation link.
+// Notion write happens at /api/confirm only after the user clicks.
+//
 // Required env vars (set in Vercel project settings):
-//   RESEND_API_KEY        — for sending the confirmation email
+//   RESEND_API_KEY        — Resend HTTP API key (sender)
+//   SUBSCRIBE_SECRET      — random string (32+ chars) used to sign confirm tokens
+// Optional env vars:
 //   RESEND_FROM           — verified sender, e.g. "The Pattern <hello@the-pattern.xyz>"
-//   NOTION_TOKEN          — Notion integration token (optional)
-//   NOTION_NEWSLETTER_DB_ID — Notion database id with Email/Date/Source props (optional)
+//   PUBLIC_BASE_URL       — origin for the confirm link, e.g. "https://the-pattern.xyz"
+//                           (auto-derived from request host when unset)
+
+const crypto = require('crypto');
+
+const TOKEN_TTL_MS = 1000 * 60 * 60 * 48; // 48 hours
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -16,67 +24,31 @@ module.exports = async (req, res) => {
   if (typeof body === 'string') {
     try { body = JSON.parse(body); } catch (_) { body = {}; }
   }
-  const email = (body && body.email ? String(body.email) : '').trim();
+  const email = (body && body.email ? String(body.email) : '').trim().toLowerCase();
   const source = body && body.source ? String(body.source) : 'footer';
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return res.status(400).json({ error: 'Invalid email address.' });
   }
 
-  const debug = {
-    has_resend_key: !!process.env.RESEND_API_KEY,
-    has_resend_from: !!process.env.RESEND_FROM,
-    resend_from: process.env.RESEND_FROM || '(not set, using default)',
-    has_notion_token: !!process.env.NOTION_TOKEN,
-    has_notion_db: !!process.env.NOTION_NEWSLETTER_DB_ID,
-  };
-  console.log('[subscribe] env check:', debug);
+  if (!process.env.RESEND_API_KEY) {
+    console.error('[subscribe] RESEND_API_KEY not set');
+    return res.status(500).json({ error: 'Email service not configured.' });
+  }
+  if (!process.env.SUBSCRIBE_SECRET) {
+    console.error('[subscribe] SUBSCRIBE_SECRET not set');
+    return res.status(500).json({ error: 'Confirm token signing not configured.' });
+  }
+
+  const baseUrl =
+    process.env.PUBLIC_BASE_URL ||
+    `https://${req.headers['x-forwarded-host'] || req.headers.host || 'the-pattern.xyz'}`;
+
+  const token = signToken({ email, source }, process.env.SUBSCRIBE_SECRET);
+  const confirmUrl = `${baseUrl}/api/confirm?t=${encodeURIComponent(token)}`;
 
   try {
-    // 1. Save to Notion (optional, non-blocking on failure)
-    if (process.env.NOTION_TOKEN && process.env.NOTION_NEWSLETTER_DB_ID) {
-      try {
-        const notionRes = await fetch('https://api.notion.com/v1/pages', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${process.env.NOTION_TOKEN}`,
-            'Content-Type': 'application/json',
-            'Notion-Version': '2022-06-28',
-          },
-          body: JSON.stringify({
-            parent: { database_id: process.env.NOTION_NEWSLETTER_DB_ID },
-            properties: {
-              Email: { email },
-              Date: { date: { start: new Date().toISOString() } },
-              Source: { rich_text: [{ text: { content: source } }] },
-            },
-          }),
-        });
-        if (!notionRes.ok) {
-          const err = await notionRes.json().catch(() => ({}));
-          console.error('[subscribe] Notion error:', err);
-        } else {
-          console.log('[subscribe] Notion: row created');
-        }
-      } catch (err) {
-        console.error('[subscribe] Notion request failed:', err);
-      }
-    } else {
-      console.log('[subscribe] Notion: skipped (env vars not set)');
-    }
-
-    // 2. Send confirmation email via Resend HTTP API
-    if (!process.env.RESEND_API_KEY) {
-      console.error('[subscribe] Resend: SKIPPED — RESEND_API_KEY not set in this deployment env');
-      return res.status(500).json({
-        error: 'Email service not configured.',
-        debug,
-      });
-    }
-
     const fromAddr = process.env.RESEND_FROM || 'The Pattern <hello@the-pattern.xyz>';
-    console.log('[subscribe] Resend: sending from', fromAddr, 'to', email);
-
     const resendRes = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -86,8 +58,8 @@ module.exports = async (req, res) => {
       body: JSON.stringify({
         from: fromAddr,
         to: [email],
-        subject: "You're in — The Pattern",
-        html: confirmationEmail(email),
+        subject: 'Confirm your subscription — The Pattern',
+        html: confirmEmail(email, confirmUrl),
       }),
     });
 
@@ -101,21 +73,30 @@ module.exports = async (req, res) => {
       });
     }
 
-    console.log('[subscribe] Resend: sent', resendBody);
-    return res.status(200).json({ success: true, id: resendBody.id });
+    console.log('[subscribe] Confirm email sent to', email, 'id', resendBody.id);
+    return res.status(200).json({ success: true });
   } catch (err) {
     console.error('[subscribe] Unexpected error:', err);
-    return res.status(500).json({ error: 'Something went wrong. Please try again.', detail: String(err && err.message || err) });
+    return res.status(500).json({ error: 'Something went wrong. Please try again.' });
   }
 };
 
-function confirmationEmail(email) {
+// ── Token signing ──────────────────────────────────────────────────────────
+function signToken(payload, secret) {
+  const body = { ...payload, exp: Date.now() + TOKEN_TTL_MS };
+  const data = Buffer.from(JSON.stringify(body)).toString('base64url');
+  const sig = crypto.createHmac('sha256', secret).update(data).digest('base64url');
+  return `${data}.${sig}`;
+}
+
+// ── Email template ─────────────────────────────────────────────────────────
+function confirmEmail(email, confirmUrl) {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>You're in — The Pattern</title>
+  <title>Confirm your subscription — The Pattern</title>
 </head>
 <body style="margin:0;padding:0;background:#080708;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
   <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#080708;padding:48px 20px;">
@@ -131,29 +112,49 @@ function confirmationEmail(email) {
           </tr>
           <tr>
             <td style="background:#0f0d14;border:1px solid rgba(240,235,224,0.12);border-top:none;border-radius:0 0 14px 14px;padding:40px 40px 36px;">
+
               <h1 style="margin:0 0 20px;font-family:Georgia,'Times New Roman',serif;font-size:30px;color:#f0ebe0;line-height:1.25;font-weight:400;">
-                You're in. <em style="font-style:italic;color:rgba(240,235,224,0.55);">Confirmed.</em>
+                Confirm your subscription. <em style="font-style:italic;color:rgba(240,235,224,0.55);">One click.</em>
               </h1>
-              <p style="margin:0 0 18px;font-size:15px;color:rgba(240,235,224,0.7);line-height:1.75;">
-                Welcome to The Pattern — a diagnostic feed for creative professionals navigating identity transition in midlife.
+
+              <p style="margin:0 0 28px;font-size:15px;color:rgba(240,235,224,0.7);line-height:1.75;">
+                Click below to activate the weekly digest. One article, one archetype, every week. No noise, no cheerleading.
               </p>
-              <p style="margin:0 0 32px;font-size:15px;color:rgba(240,235,224,0.7);line-height:1.75;">
-                One article. One archetype. Every week. No noise.
-              </p>
+
               <table cellpadding="0" cellspacing="0" role="presentation">
                 <tr>
                   <td style="border-radius:3px;background:#a885d4;">
-                    <a href="https://life-pattern-engine.xyz"
-                       style="display:inline-block;padding:14px 28px;font-family:'Courier New',monospace;font-size:11px;font-weight:500;color:#080708;text-decoration:none;border-radius:3px;letter-spacing:0.14em;text-transform:uppercase;">
-                      Take the diagnostic →
+                    <a href="${confirmUrl}"
+                       style="display:inline-block;padding:16px 32px;font-family:'Courier New',monospace;font-size:11px;font-weight:500;color:#080708;text-decoration:none;border-radius:3px;letter-spacing:0.16em;text-transform:uppercase;">
+                      Confirm subscription →
                     </a>
                   </td>
                 </tr>
               </table>
-              <hr style="margin:36px 0 22px;border:none;border-top:1px solid rgba(240,235,224,0.1);">
+
+              <p style="margin:18px 0 0;font-size:11px;color:rgba(240,235,224,0.4);line-height:1.7;letter-spacing:0.04em;">
+                Link expires in 48 hours.
+              </p>
+
+              <hr style="margin:32px 0 24px;border:none;border-top:1px solid rgba(240,235,224,0.1);">
+
+              <p style="margin:0 0 14px;font-size:11px;color:rgba(240,235,224,0.45);letter-spacing:0.12em;text-transform:uppercase;line-height:1.7;">
+                While you're here
+              </p>
+              <p style="margin:0 0 8px;font-size:14px;color:rgba(240,235,224,0.7);line-height:1.7;">
+                <a href="https://life-pattern-engine.xyz" style="color:#a885d4;text-decoration:none;border-bottom:1px solid rgba(168,133,212,0.4);">
+                  Take the diagnostic →
+                </a>
+              </p>
+              <p style="margin:0 0 24px;font-size:12px;color:rgba(240,235,224,0.45);line-height:1.7;">
+                28 questions, ~9 minutes. Locates where you are in the pattern, right now.
+              </p>
+
+              <hr style="margin:0 0 22px;border:none;border-top:1px solid rgba(240,235,224,0.08);">
+
               <p style="margin:0;font-size:11px;color:rgba(240,235,224,0.4);line-height:1.7;">
-                You subscribed with <strong style="color:rgba(240,235,224,0.7);">${escapeHtml(email)}</strong>.
-                If this wasn't you, ignore this email — you won't hear from us again.
+                You requested this with <strong style="color:rgba(240,235,224,0.7);">${escapeHtml(email)}</strong>.
+                If this wasn't you, ignore this email — without the click, no subscription is created.
               </p>
             </td>
           </tr>
