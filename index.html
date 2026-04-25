@@ -1,0 +1,1447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script>
+  history.scrollRestoration = 'manual';
+  window.scrollTo(0, 0);
+  document.addEventListener('DOMContentLoaded', () => window.scrollTo(0, 0));
+  window.addEventListener('load', () => { window.scrollTo(0, 0); document.body.style.visibility = 'visible'; });
+  // Lock body until scroll is reset
+  document.write('<style>body{visibility:hidden}</style>');
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Pattern</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080708;
+    --fg: #f0ebe0;
+    --fg-dim: rgba(240,235,224,0.5);
+    --fg-muted: rgba(240,235,224,0.25);
+    --accent: oklch(0.55 0.16 318);
+    --accent-bright: oklch(0.70 0.18 318);
+    --rule: rgba(240,235,224,0.09);
+    --serif: 'Cormorant Garamond', Georgia, serif;
+    --mono: 'IBM Plex Mono', monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--mono);
+    font-weight: 300;
+    line-height: 1.6;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 20px; left: 50%; z-index: 100;
+    transform: translateX(-50%);
+    width: calc(100% - 80px);
+    max-width: 1200px;
+    padding: 16px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(255,252,248,0.12);
+    backdrop-filter: blur(32px) saturate(1.8) brightness(1.12);
+    -webkit-backdrop-filter: blur(32px) saturate(1.8) brightness(1.12);
+    border: 1px solid rgba(255,252,248,0.18);
+    border-radius: 14px;
+    transition: background 0.4s, border-color 0.4s, top 0.4s;
+  }
+  nav.scrolled {
+    background: rgba(255,252,248,0.16);
+    backdrop-filter: blur(40px) saturate(2) brightness(1.15);
+    -webkit-backdrop-filter: blur(40px) saturate(2) brightness(1.15);
+    border-color: rgba(255,252,248,0.24);
+    top: 12px;
+  }
+  .nav-logo {
+    font-family: var(--mono); font-size: 11px; font-weight: 500;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--fg); text-decoration: none;
+  }
+  .nav-logo span { color: var(--accent); }
+  .nav-right { display: flex; align-items: center; gap: 36px; }
+  .nav-link {
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--fg-dim); text-decoration: none; transition: color 0.2s;
+  }
+  .nav-link:hover { color: var(--fg); }
+  .nav-cta {
+    font-family: var(--mono); font-size: 10px; font-weight: 500;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--bg); background: var(--fg);
+    padding: 10px 20px; text-decoration: none; border-radius: 3px; transition: background 0.2s;
+  }
+  .nav-cta:hover { background: var(--accent); color: var(--fg); }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative; min-height: 100vh;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    overflow: hidden;
+  }
+  .hero-bg-photo {
+    position: absolute; inset: 0;
+    background-image: url('https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1920&q=90&fit=crop');
+    background-size: cover;
+    background-position: center top;
+    transform: scale(1.04);
+    transition: transform 8s ease-out;
+  }
+  .hero-bg-photo.loaded { transform: scale(1.0); }
+  .hero-bg-dim {
+    position: absolute; inset: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(8,7,8,0.22) 0%,
+      rgba(8,7,8,0.15) 40%,
+      rgba(8,7,8,0.60) 80%,
+      rgba(8,7,8,0.88) 100%
+    );
+  }
+  #star-canvas {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    mix-blend-mode: screen; opacity: 0.5;
+  }
+  .hero-nebula {
+    position: absolute; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(ellipse 60% 60% at 70% 30%, oklch(0.30 0.14 318 / 0.35) 0%, transparent 65%),
+      radial-gradient(ellipse 40% 50% at 20% 80%, oklch(0.20 0.10 240 / 0.20) 0%, transparent 60%),
+      radial-gradient(ellipse 30% 30% at 85% 75%, oklch(0.25 0.12 280 / 0.15) 0%, transparent 55%);
+  }
+  .hero-content {
+    position: relative; z-index: 2;
+    padding: 0 52px 80px;
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 80px; align-items: end;
+  }
+  .hero-eyebrow {
+    font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: rgba(255,252,248,0.75); margin-bottom: 28px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .hero-eyebrow::before {
+    content: ''; width: 20px; height: 1px; background: rgba(255,252,248,0.75);
+  }
+  .hero-headline {
+    font-family: var(--serif);
+    font-size: clamp(56px, 6.5vw, 104px);
+    font-weight: 600; line-height: 0.92; letter-spacing: -0.03em;
+    margin-bottom: 40px;
+  }
+  .hero-headline em { font-style: italic; font-weight: 600; color: var(--fg-dim); }
+  .hero-sub {
+    font-size: 11px; line-height: 1.85; color: var(--fg-dim);
+    max-width: 400px; margin-bottom: 48px;
+  }
+  .hero-actions { display: flex; align-items: center; gap: 28px; }
+  .btn-primary {
+    font-family: var(--mono); font-size: 10px; font-weight: 500;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--bg); background: var(--fg);
+    padding: 14px 28px; text-decoration: none; display: inline-block;
+    border-radius: 3px;
+    transition: background 0.2s, color 0.2s;
+  }
+  .btn-primary:hover { background: var(--accent); color: var(--fg); }
+  .btn-ghost {
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--fg-dim); text-decoration: none;
+    border-bottom: 1px solid var(--rule); padding-bottom: 2px;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .btn-ghost:hover { color: var(--fg); border-color: var(--fg-dim); }
+
+  .hero-right-block {
+    display: flex; flex-direction: column; gap: 0;
+    border-left: 1px solid var(--rule); padding-left: 60px;
+  }
+  .hero-phase-row {
+    padding: 28px 0; border-bottom: 1px solid var(--rule);
+    display: grid; grid-template-columns: 36px 1fr; gap: 18px;
+    align-items: start; transition: background 0.2s;
+  }
+  .hero-phase-row:last-child { border-bottom: none; }
+  .hpr-num {
+    font-family: var(--serif); font-size: 12px; font-weight: 400;
+    color: var(--fg-muted); padding-top: 2px; transition: color 0.3s;
+  }
+  .hero-phase-row:hover .hpr-num { color: var(--accent); }
+  .hpr-name {
+    font-family: var(--serif); font-size: 20px; font-weight: 300;
+    margin-bottom: 6px; letter-spacing: 0.01em;
+  }
+  .hpr-desc { font-size: 10px; line-height: 1.7; color: var(--fg-dim); }
+
+  /* ── MARQUEE ── */
+  .marquee-wrap {
+    overflow: hidden; border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    padding: 18px 0; background: rgba(240,235,224,0.015);
+  }
+  .marquee-track {
+    display: flex; gap: 56px; animation: marquee 28s linear infinite;
+    width: max-content;
+  }
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  .marquee-item {
+    font-family: var(--serif); font-size: 14px; font-weight: 300;
+    font-style: italic; color: var(--fg-muted); white-space: nowrap;
+    display: flex; align-items: center; gap: 56px;
+  }
+  .marquee-item::after { content: '·'; color: var(--accent); }
+
+  /* ── SECTION UTIL ── */
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 0 52px; }
+  .section-rule {
+    border: none; border-top: 1px solid var(--rule);
+  }
+  .section-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 36px 0; border-bottom: 1px solid var(--rule);
+  }
+  .stag {
+    font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--fg-muted);
+  }
+  .stag-link {
+    font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--fg-muted); text-decoration: none; transition: color 0.2s;
+  }
+  .stag-link:hover { color: var(--fg-dim); }
+
+  /* ── MODEL — FULL BLEED PHASE SCENES ── */
+  .phase-scene {
+    position: relative; width: 100%; min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .psec-bg {
+    position: absolute; inset: -8%;
+    background-size: cover; background-position: center;
+    will-change: transform;
+  }
+  .psec-dim {
+    position: absolute; inset: 0; pointer-events: none;
+    background: rgba(8,7,8,0.20);
+  }
+  .psec-nebula {
+    position: absolute; inset: 0; pointer-events: none;
+  }
+  .pn-1 { background: radial-gradient(ellipse 70% 70% at 30% 50%, oklch(0.28 0.14 318 / 0.30) 0%, transparent 65%); }
+  .pn-2 { background: radial-gradient(ellipse 70% 70% at 70% 50%, oklch(0.18 0.10 240 / 0.35) 0%, transparent 65%); }
+  .pn-3 { background: radial-gradient(ellipse 70% 70% at 50% 60%, oklch(0.30 0.08 60 / 0.20) 0%, transparent 65%); }
+
+  /* Shrinking black card */
+  .psec-card {
+    position: relative; z-index: 2;
+    background: transparent;
+    border: none;
+    display: grid; grid-template-columns: 1fr 1fr;
+    width: 90%; margin-left: 5%;
+    will-change: width, margin-left;
+  }
+
+
+  /* Converging circles overlay */
+  .psec-circles {
+    position: absolute; inset: 0; pointer-events: none; z-index: 1;
+    overflow: hidden;
+  }
+  .psec-circles svg {
+    width: 100%; height: 100%; position: absolute; inset: 0; overflow: visible;
+  }
+  .circle-a, .circle-b {
+    fill: none;
+    stroke: rgba(240,235,224,0.18);
+    stroke-width: 0.75;
+  }
+  /* crosshair bracket marks on circles */
+  .bracket { stroke: rgba(240,235,224,0.35); stroke-width: 0.75; fill: none; }
+
+  .phase-tag {
+    font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 24px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .phase-tag::before { content: ''; width: 16px; height: 1px; background: var(--accent); }
+  .phase-title {
+    font-family: var(--serif);
+    font-size: clamp(48px, 4.5vw, 80px);
+    font-weight: 300; line-height: 1.0;
+    letter-spacing: -0.02em; margin-bottom: 28px;
+  }
+  .phase-body {
+    font-size: 11px; line-height: 1.9; color: var(--fg-dim);
+    max-width: 380px; margin-bottom: 36px;
+  }
+  .phase-signal {
+    font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--fg-muted); border-top: 1px solid var(--rule);
+    padding-top: 20px; line-height: 1.8;
+  }
+  .psec-visual {
+    position: relative; min-height: 500px;
+    display: flex; align-items: center; justify-content: center;
+    border-right: 1px solid rgba(240,235,224,0.12);
+    background: transparent;
+  }
+  .psec-content {
+    padding: 72px 64px; display: flex; flex-direction: column; justify-content: center;
+    position: relative; overflow: hidden;
+    background: rgba(8,7,8,0.70);
+    border: 1px solid var(--rule);
+  }
+
+  /* ── DIAGNOSTIC ── */
+  .diagnostic-wrap {
+    display: block;
+    border-bottom: 1px solid var(--rule);
+  }
+  .diag-left {
+    padding: 80px 0;
+    display: flex; flex-direction: row; justify-content: space-between; align-items: flex-end; gap: 80px;
+  }
+  .diag-right {
+    padding: 80px 0 80px 80px;
+    display: flex; align-items: center;
+  }
+  .diag-label {
+    font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 28px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .diag-label::before { content: ''; width: 16px; height: 1px; background: var(--accent); }
+  .diag-title {
+    font-family: var(--serif);
+    font-size: clamp(38px, 3.8vw, 62px);
+    font-weight: 300; line-height: 1.05; letter-spacing: -0.01em;
+    margin-bottom: 28px;
+  }
+  .diag-title em { font-style: italic; color: var(--fg-dim); }
+  .diag-body {
+    font-size: 11px; line-height: 1.9; color: var(--fg-dim);
+    max-width: 380px; margin-bottom: 40px;
+  }
+  .diag-stats { display: flex; gap: 48px; }
+  .dstat-num {
+    font-family: var(--serif); font-size: 40px; font-weight: 300;
+    line-height: 1; margin-bottom: 4px;
+  }
+  .dstat-label {
+    font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--fg-muted);
+  }
+  .engine-card {
+    width: 100%;
+    background: rgba(240,235,224,0.03);
+    border: 1px solid var(--rule);
+    padding: 40px; display: flex; flex-direction: column; gap: 32px;
+  }
+  .engine-top {
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .engine-name {
+    font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--fg-muted);
+  }
+  .engine-live {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 9px; letter-spacing: 0.12em; color: var(--accent);
+  }
+  .pulse {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--accent); animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
+  .engine-rows { display: flex; flex-direction: column; gap: 0; }
+  .erow {
+    display: grid; grid-template-columns: 90px 1fr 48px; gap: 16px;
+    align-items: center; padding: 14px 0; border-bottom: 1px solid var(--rule);
+  }
+  .erow:last-child { border-bottom: none; }
+  .erow-label { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-muted); }
+  .erow-bar { height: 1px; background: var(--rule); position: relative; }
+  .erow-fill { position: absolute; left:0; top:0; height:100%; background: var(--accent); opacity: 0.7; }
+  .erow-pct { font-family: var(--serif); font-size: 16px; font-weight: 300; color: var(--fg-dim); text-align:right; }
+  .engine-result {
+    font-family: var(--serif); font-size: 18px; font-weight: 300;
+    font-style: italic; color: var(--fg-dim); line-height: 1.5;
+    border-top: 1px solid var(--rule); padding-top: 24px;
+  }
+
+  /* ── ARTICLES CAROUSEL ── */
+  .art-carousel-wrap { position: relative; overflow: hidden; }
+  .art-arrow {
+    font-family: var(--mono); font-size: 14px; font-weight: 300;
+    color: var(--fg-dim); background: none; border: 1px solid var(--rule);
+    width: 32px; height: 32px; cursor: pointer; display: flex;
+    align-items: center; justify-content: center;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .art-arrow:hover { color: var(--fg); border-color: var(--fg-dim); }
+  .art-arrow:disabled { opacity: 0.25; cursor: default; }
+  .art-dots {
+    display: none; justify-content: center; gap: 8px;
+    padding: 20px 0;
+  }
+  .art-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--fg-muted); border: none; cursor: pointer;
+    padding: 0; transition: background 0.2s, transform 0.2s;
+  }
+  .art-dot.active { background: var(--fg); transform: scale(1.4); }
+
+  /* ── ARTICLES ── */
+  .articles-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    border-top: 1px solid var(--rule);
+  }
+  .art-card {
+    padding: 48px 40px; border-right: 1px solid var(--rule);
+    text-decoration: none; color: inherit; display: block;
+    transition: background 0.25s; cursor: pointer;
+  }
+  .art-card:last-child { border-right: none; }
+  .art-card:hover { background: rgba(240,235,224,0.025); }
+  .art-ptag {
+    font-size: 8px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 18px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .art-ptag::before { content: ''; width: 12px; height: 1px; background: var(--accent); }
+  .art-title {
+    font-family: var(--serif); font-size: 22px; font-weight: 300;
+    line-height: 1.25; margin-bottom: 14px;
+  }
+  .art-excerpt {
+    font-size: 10px; line-height: 1.85; color: var(--fg-dim); margin-bottom: 28px;
+  }
+  .art-meta { display: flex; justify-content: space-between; align-items: center; }
+  .art-read { font-size: 8px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg-muted); transition: color 0.2s; }
+  .art-card:hover .art-read { color: var(--fg-dim); }
+  .art-time { font-size: 8px; letter-spacing: 0.12em; color: var(--fg-muted); }
+
+  /* ── NIGHT SKY BAND ── */
+  .sky-band {
+    position: relative; overflow: hidden;
+    min-height: 360px; border-bottom: 1px solid var(--rule);
+    display: flex; align-items: center;
+  }
+  .sky-band-bg {
+    position: absolute; inset: -8%;
+    background-image: url('https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=1920&q=90&fit=crop');
+    background-size: cover; background-position: center;
+  }
+  .sky-band-dim {
+    position: absolute; inset: 0;
+    background: rgba(8,7,8,0.55);
+  }
+  #sky-canvas { position: absolute; inset: 0; width: 100%; height: 100%; mix-blend-mode: screen; opacity: 0.4; }
+  .sky-overlay {
+    position: absolute; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(ellipse 90% 100% at 50% 50%, oklch(0.30 0.12 280 / 0.35) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 80% at 15% 50%, oklch(0.28 0.14 318 / 0.25) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 60% at 85% 50%, oklch(0.20 0.08 220 / 0.20) 0%, transparent 60%);
+  }
+  .sky-content {
+    position: relative; z-index: 2; padding: 80px 52px;
+    text-align: center; width: 100%;
+  }
+  .sky-overline {
+    font-size: 9px; letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 24px;
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+  }
+  .sky-overline::before, .sky-overline::after {
+    content: ''; width: 40px; height: 1px; background: var(--accent); opacity: 0.5;
+  }
+  .sky-headline {
+    font-family: var(--serif);
+    font-size: clamp(40px, 5vw, 76px);
+    font-weight: 300; line-height: 1.1; letter-spacing: -0.02em;
+    margin-bottom: 24px; max-width: 800px; margin-left: auto; margin-right: auto;
+  }
+  .sky-headline em { font-style: italic; color: var(--fg-dim); }
+  .sky-sub {
+    font-size: 11px; color: var(--fg-dim); max-width: 480px;
+    margin: 0 auto 40px; line-height: 1.85;
+  }
+
+  /* ── EMAIL ── */
+  .email-wrap {
+    display: grid; grid-template-columns: 1fr 1fr;
+    border-bottom: 1px solid var(--rule);
+  }
+  .email-left {
+    padding: 80px 80px 80px 0; border-right: 1px solid var(--rule);
+  }
+  .email-right {
+    padding: 80px 0 80px 80px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .email-label {
+    font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--fg-muted); margin-bottom: 28px;
+  }
+  .email-title {
+    font-family: var(--serif);
+    font-size: clamp(36px, 3.5vw, 56px);
+    font-weight: 300; line-height: 1.05; letter-spacing: -0.01em;
+    margin-bottom: 24px;
+  }
+  .email-title em { font-style: italic; color: var(--fg-dim); }
+  .email-body { font-size: 11px; line-height: 1.9; color: var(--fg-dim); }
+  .email-form { display: flex; flex-direction: column; gap: 20px; }
+  .form-field {}
+  .form-label {
+    display: block; font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--fg-dim); margin-bottom: 8px;
+  }
+  .form-input {
+    width: 100%; background: transparent; border: none;
+    border-bottom: 1px solid var(--fg-dim); color: var(--fg);
+    font-family: var(--mono); font-size: 13px; font-weight: 300;
+    padding: 10px 0; outline: none; transition: border-color 0.2s;
+  }
+  .form-input::placeholder { color: var(--fg-muted); }
+  .form-input:focus { border-color: var(--fg); }
+  .form-note {
+    font-size: 9px; letter-spacing: 0.06em; color: var(--fg-muted); line-height: 1.7;
+  }
+  .form-submit {
+    font-family: var(--mono); font-size: 10px; font-weight: 500;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--bg); background: var(--fg);
+    padding: 15px 32px; border: none; cursor: pointer; border-radius: 3px;
+    transition: background 0.2s, color 0.2s; align-self: flex-start;
+  }
+  .form-submit:hover { background: var(--accent); color: var(--fg); }
+
+  /* ── FOOTER ── */
+  footer {
+    padding: 44px 52px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .footer-logo {
+    font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--fg-muted);
+  }
+  .footer-logo span { color: var(--accent); }
+  .footer-copy { font-size: 9px; letter-spacing: 0.1em; color: var(--fg-muted); }
+  .footer-links { display: flex; gap: 24px; }
+  .footer-link {
+    font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--fg-muted); text-decoration: none; transition: color 0.2s;
+  }
+  .footer-link:hover { color: var(--fg-dim); }
+
+  /* ── ORBITAL RINGS ── */
+  .orbital {
+    position: absolute; inset: 0; pointer-events: none; z-index: 2;
+    overflow: hidden;
+  }
+  .orbital svg { position: absolute; }
+
+  @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  @keyframes spin-rev  { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
+  @keyframes spin-med  { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  @keyframes orbit-dot { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+  .ring-spin-slow { animation: spin-slow 28s linear infinite; transform-origin: center; }
+  .ring-spin-rev  { animation: spin-rev 18s linear infinite; transform-origin: center; }
+  .ring-spin-med  { animation: spin-med 12s linear infinite; transform-origin: center; }
+  .ring-float {
+    animation: float-ring 6s ease-in-out infinite;
+  }
+  @keyframes float-ring {
+    0%,100% { transform: translateY(0px); }
+    50%      { transform: translateY(-12px); }
+  }
+
+  /* Parallax wrapper */
+  .parallax-layer {
+    position: absolute; inset: -20%; width: 140%; height: 140%;
+    transition: transform 0.1s linear;
+    will-change: transform;
+  }
+  @keyframes planet-a { 0%,100%{transform:translateX(-200px)} 50%{transform:translateX(-30px)} }
+  @keyframes planet-b { 0%,100%{transform:translateX(200px)} 50%{transform:translateX(30px)} }
+  .hero-circles {
+    position: absolute; inset: 0; pointer-events: none; z-index: 1; overflow: hidden;
+  }
+  .hero-circles svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .hero-ca { animation: planet-a 14s ease-in-out infinite; }
+  .hero-cb { animation: planet-b 14s ease-in-out infinite; }
+
+  /* ── PHASE TEXT ANIMATION ── */
+  .psec-content .phase-tag,
+  .psec-content .phase-title,
+  .psec-content .phase-body,
+  .psec-content .phase-signal,
+  .psec-content .diag-label,
+  .psec-content .diag-title,
+  .psec-content .diag-body,
+  .psec-content .diag-stats,
+  .psec-content .btn-primary {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateY(8px);
+    transition: opacity 0.9s cubic-bezier(0.22,1,0.36,1),
+                filter 0.9s cubic-bezier(0.22,1,0.36,1),
+                transform 0.9s cubic-bezier(0.22,1,0.36,1);
+  }
+  .phase-scene.text-on .psec-content .phase-tag   { opacity: 1; filter: blur(0); transform: none; transition-delay: 0.05s; }
+  .phase-scene.text-on .psec-content .phase-title  { opacity: 1; filter: blur(0); transform: none; transition-delay: 0.22s; }
+  .phase-scene.text-on .psec-content .phase-body   { opacity: 1; filter: blur(0); transform: none; transition-delay: 0.40s; }
+  .phase-scene.text-on .psec-content .phase-signal { opacity: 1; filter: blur(0); transform: none; transition-delay: 0.60s; }
+  .phase-scene.text-on .psec-content .diag-label  { opacity: 1; filter: blur(0); transform: none; transition-delay: 0.05s; }
+  .phase-scene.text-on .psec-content .diag-title  { opacity: 1; filter: blur(0); transform: none; transition-delay: 0.22s; }
+  .phase-scene.text-on .psec-content .diag-body   { opacity: 1; filter: blur(0); transform: none; transition-delay: 0.40s; }
+  .phase-scene.text-on .psec-content .diag-stats  { opacity: 1; filter: blur(0); transform: none; transition-delay: 0.55s; }
+  .phase-scene.text-on .psec-content .btn-primary { opacity: 1; filter: blur(0); transform: none; transition-delay: 0.70s; }
+
+  .btn-primary, .form-submit { position: relative; overflow: hidden; }
+  .btn-primary::after, .form-submit::after {
+    content: attr(data-hover);
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--accent);
+    color: var(--fg);
+    opacity: 1;
+    transform: translateY(105%);
+    transition: transform 0.38s cubic-bezier(0.22,1,0.36,1);
+    font-family: var(--mono); font-size: 10px; font-weight: 500;
+    letter-spacing: 0.14em;
+    border-radius: 3px;
+  }
+  .btn-primary:hover::after, .form-submit:hover::after { transform: translateY(0); }
+  .btn-primary:hover, .form-submit:hover { background: var(--fg); color: var(--bg); }
+
+  #hero-left .hero-eyebrow { opacity: 0; filter: blur(8px); transform: translateY(10px); transition: opacity 1s cubic-bezier(0.22,1,0.36,1), filter 1s cubic-bezier(0.22,1,0.36,1), transform 1s cubic-bezier(0.22,1,0.36,1); }
+  #hero-left .hero-headline { opacity: 0; transform: translateY(14px); transition: opacity 1s cubic-bezier(0.22,1,0.36,1), transform 1s cubic-bezier(0.22,1,0.36,1); }
+  #hero-left .hero-sub { opacity: 0; filter: blur(8px); transform: translateY(10px); transition: opacity 1s cubic-bezier(0.22,1,0.36,1), filter 1s cubic-bezier(0.22,1,0.36,1), transform 1s cubic-bezier(0.22,1,0.36,1); }
+  #hero-left .hero-actions { opacity: 0; filter: blur(8px); transform: translateY(10px); transition: opacity 1s cubic-bezier(0.22,1,0.36,1), filter 1s cubic-bezier(0.22,1,0.36,1), transform 1s cubic-bezier(0.22,1,0.36,1); }
+  #hero-left.on .hero-eyebrow  { opacity:1; filter:blur(0); transform:none; transition-delay:0.05s; }
+  #hero-left.on .hero-headline { opacity:1; transform:none; transition-delay:0.20s; }
+  #hero-left.on .hero-sub      { opacity:1; filter:blur(0); transform:none; transition-delay:0.40s; }
+  #hero-left.on .hero-actions  { opacity:1; filter:blur(0); transform:none; transition-delay:0.60s; }
+
+  .reveal {
+    opacity: 0; transform: translateY(24px);
+    transition: opacity 0.75s ease, transform 0.75s ease;
+  }
+  .reveal.on { opacity: 1; transform: none; }
+
+  /* ══════════════════════════════════════════
+     MOBILE — max-width 768px
+     All rules below are ADDITIVE ONLY.
+     Desktop layout is completely unaffected.
+  ══════════════════════════════════════════ */
+  .nav-ig { display: flex; align-items: center; color: var(--fg-dim); transition: color 0.2s; }
+  .nav-ig:hover { color: var(--fg); }
+  .nav-hamburger {
+    display: none;
+    flex-direction: column; justify-content: center; gap: 5px;
+    background: none; border: none; cursor: pointer; padding: 4px;
+  }
+  .nav-hamburger span {
+    display: block; width: 20px; height: 1px;
+    background: var(--fg); transition: transform 0.3s, opacity 0.3s;
+  }
+  .nav-hamburger.open span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+  .nav-hamburger.open span:nth-child(2) { opacity: 0; }
+  .nav-hamburger.open span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+  /* Mobile drawer */
+  .mobile-drawer {
+    display: none;
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(8,7,8,0.97);
+    backdrop-filter: blur(24px);
+    z-index: 99;
+    flex-direction: column; align-items: center; justify-content: center; gap: 32px;
+  }
+  .mobile-drawer.open { display: flex; }
+  .mobile-drawer a {
+    font-family: var(--serif); font-size: 40px; font-weight: 300;
+    color: var(--fg); text-decoration: none; letter-spacing: 0.01em;
+    opacity: 0; transform: translateY(16px);
+    transition: opacity 0.4s, transform 0.4s, color 0.2s;
+  }
+  .mobile-drawer.open a { opacity: 1; transform: none; }
+  .mobile-drawer.open a:nth-child(1) { transition-delay: 0.05s; }
+  .mobile-drawer.open a:nth-child(2) { transition-delay: 0.12s; }
+  .mobile-drawer.open a:nth-child(3) { transition-delay: 0.19s; }
+  .mobile-drawer.open a:nth-child(4) { transition-delay: 0.26s; }
+  .mobile-drawer a:hover { color: var(--accent); }
+  .mobile-drawer .drawer-cta {
+    font-family: var(--mono); font-size: 11px; font-weight: 500;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--bg); background: var(--fg);
+    padding: 16px 40px; border-radius: 3px; margin-top: 16px;
+  }
+
+  @media (max-width: 768px) {
+
+    /* Nav */
+    nav {
+      width: calc(100% - 24px);
+      padding: 10px 18px;
+      top: 10px;
+    }
+    .nav-hamburger { display: flex; }
+    #nav-cta-btn { display: none; }
+    .nav-link { display: none; }
+    .nav-ig { display: none; }
+
+    /* Hero */
+    .hero { min-height: 100svh; }
+    .hero-content {
+      grid-template-columns: 1fr;
+      padding: 0 20px 48px;
+      gap: 32px;
+    }
+    .hero-headline { font-size: clamp(42px, 11vw, 60px); line-height: 0.95; margin-bottom: 24px; }
+    .hero-sub { max-width: 100%; font-size: 11px; margin-bottom: 32px; }
+    .hero-actions { flex-direction: column; gap: 12px; align-items: stretch; }
+    .hero-actions .btn-primary, .hero-actions .btn-ghost { text-align: center; width: 100%; display: block; }
+    .hero-right-block { display: none; }
+    .hero-content { padding-top: 120px; }
+
+    /* Phase scenes — full width card, image shows around edges */
+    .phase-scene { min-height: auto; padding: 48px 0; }
+    .psec-card {
+      grid-template-columns: 1fr !important;
+      direction: ltr !important;
+      width: 100% !important;
+      margin-left: 0 !important;
+      padding: 0 16px;
+      background: transparent !important;
+      border: none !important;
+    }
+    .psec-visual { display: none !important; }
+    .psec-content {
+      padding: 32px 24px !important;
+      border: 1px solid var(--rule) !important;
+      margin: 0 !important;
+    }
+    .phase-title { font-size: clamp(38px, 10vw, 56px); margin-bottom: 16px; }
+
+    /* Sections */
+    .wrap { padding: 0 20px; }
+    .section-head { padding: 20px 0; }
+
+    /* Diagnostic */
+    #diagnostic { min-height: auto !important; padding: 32px 0; }
+    #card-diag {
+      width: 100% !important;
+      margin-left: 0 !important;
+      padding: 0 16px;
+      background: transparent !important;
+      border: none !important;
+    }
+    #card-diag .psec-content {
+      border: 1px solid var(--rule) !important;
+    }
+    .diag-left { flex-direction: column; gap: 24px; padding: 32px 0; }
+    .diag-title { font-size: clamp(30px, 8vw, 44px); margin-bottom: 16px; }
+    .diag-body { max-width: 100%; margin-bottom: 24px; }
+    .diag-stats { gap: 0; justify-content: space-between; width: 100%; }
+    .diag-stats > div { flex: 1; text-align: center; }
+    .dstat-num { font-size: 32px; }
+    .btn-primary { width: 100%; text-align: center; display: flex; align-items: center; justify-content: center; }
+
+    /* Articles — mobile carousel */
+    .art-carousel-wrap { overflow: hidden; padding: 0 20px; }
+    .articles-grid {
+      grid-template-columns: repeat(3, 100%) !important;
+      gap: 0 !important;
+      transition: transform 0.4s cubic-bezier(0.22,1,0.36,1);
+      border-top: none !important;
+    }
+    .art-card { border-right: none !important; border-bottom: 1px solid var(--rule) !important; padding: 32px 0 !important; }
+    .art-dots { display: flex; }
+    .art-arrow { display: none; }
+
+    /* Sky band */
+    .sky-headline { font-size: clamp(28px, 8vw, 44px); margin-bottom: 16px; }
+    .sky-content { padding: 48px 20px; }
+
+    /* Email */
+    .email-wrap { grid-template-columns: 1fr; }
+    .email-left { padding: 40px 0 24px; border-right: none; border-bottom: 1px solid var(--rule); }
+    .email-right { padding: 32px 0; }
+    .email-title { font-size: clamp(28px, 7vw, 40px); }
+    .form-submit { width: 100%; text-align: center; }
+
+    /* Footer */
+    footer { flex-direction: column; gap: 16px; text-align: center; padding: 28px 20px; }
+    .footer-links { justify-content: center; }
+  }
+</style>
+<template id="__bundler_thumbnail" data-bg-color="#080708">
+  <svg viewBox="0 0 120 80" xmlns="http://www.w3.org/2000/svg">
+    <rect width="120" height="80" fill="#080708"/>
+    <circle cx="80" cy="28" r="22" fill="oklch(0.30 0.14 318 / 0.5)"/>
+    <circle cx="35" cy="55" r="14" fill="oklch(0.20 0.10 260 / 0.3)"/>
+    <text x="12" y="42" font-family="Georgia,serif" font-size="11" fill="rgba(240,235,224,0.9)" font-style="italic">the·pattern</text>
+    <line x1="12" y1="48" x2="108" y2="48" stroke="rgba(240,235,224,0.12)" stroke-width="0.5"/>
+    <text x="12" y="58" font-family="monospace" font-size="5" fill="rgba(240,235,224,0.4)" letter-spacing="1">FRICTION · DISSOLUTION · RECONSTRUCTION</text>
+  </svg>
+</template>
+</head>
+<body>
+
+<!-- Mobile drawer -->
+<div class="mobile-drawer" id="mobile-drawer">
+  <a href="#model" onclick="closeDrawer()">The Model</a>
+  <a href="#articles" onclick="closeDrawer()">Articles</a>
+  <a href="https://instagram.com/life_pattern_engine" target="_blank" onclick="closeDrawer()">Instagram</a>
+  <a href="https://life-pattern-engine.xyz" target="_blank" class="drawer-cta" onclick="closeDrawer()">Take the diagnostic</a>
+</div>
+
+<!-- NAV -->
+<nav id="nav">
+  <a href="#" class="nav-logo">the<span>·</span>pattern</a>
+  <div class="nav-right">
+    <a href="#model" class="nav-link">The Model</a>
+    <a href="#articles" class="nav-link">Articles</a>
+    <a href="https://instagram.com/life_pattern_engine" target="_blank" class="nav-link nav-ig" title="@life_pattern_engine">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" stroke="none"/>
+      </svg>
+    </a>
+    <a href="https://life-pattern-engine.xyz" target="_blank" class="nav-cta" id="nav-cta-btn">Take the diagnostic</a>
+    <!-- Hamburger (mobile only) -->
+    <button class="nav-hamburger" id="nav-hamburger" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- ═══ HERO ═══ -->
+<section class="hero">
+  <div class="hero-bg-photo" id="hero-bg-photo"></div>
+  <div class="hero-bg-dim"></div>
+  <canvas id="star-canvas"></canvas>
+  <div class="hero-nebula"></div>
+
+  <!-- Hero planetary circles -->
+  <div class="hero-circles">
+    <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <g class="hero-ca">
+        <circle cx="720" cy="450" r="360" stroke="rgba(240,235,224,0.10)" stroke-width="0.7" fill="none"/>
+        <line x1="360" y1="260" x2="360" y2="230" stroke="rgba(240,235,224,0.22)" stroke-width="0.7"/>
+        <line x1="360" y1="230" x2="390" y2="230" stroke="rgba(240,235,224,0.22)" stroke-width="0.7"/>
+        <line x1="1080" y1="260" x2="1080" y2="230" stroke="rgba(240,235,224,0.22)" stroke-width="0.7"/>
+        <line x1="1080" y1="230" x2="1050" y2="230" stroke="rgba(240,235,224,0.22)" stroke-width="0.7"/>
+        <line x1="360" y1="640" x2="360" y2="670" stroke="rgba(240,235,224,0.22)" stroke-width="0.7"/>
+        <line x1="360" y1="670" x2="390" y2="670" stroke="rgba(240,235,224,0.22)" stroke-width="0.7"/>
+        <line x1="1080" y1="640" x2="1080" y2="670" stroke="rgba(240,235,224,0.22)" stroke-width="0.7"/>
+        <line x1="1080" y1="670" x2="1050" y2="670" stroke="rgba(240,235,224,0.22)" stroke-width="0.7"/>
+        <line x1="700" y1="450" x2="740" y2="450" stroke="rgba(240,235,224,0.15)" stroke-width="0.6"/>
+        <line x1="720" y1="430" x2="720" y2="470" stroke="rgba(240,235,224,0.15)" stroke-width="0.6"/>
+      </g>
+      <g class="hero-cb">
+        <circle cx="720" cy="450" r="240" stroke="rgba(240,235,224,0.07)" stroke-width="0.7" fill="none" stroke-dasharray="6 16"/>
+        <line x1="480" y1="315" x2="480" y2="295" stroke="rgba(240,235,224,0.15)" stroke-width="0.7"/>
+        <line x1="480" y1="295" x2="500" y2="295" stroke="rgba(240,235,224,0.15)" stroke-width="0.7"/>
+        <line x1="960" y1="315" x2="960" y2="295" stroke="rgba(240,235,224,0.15)" stroke-width="0.7"/>
+        <line x1="960" y1="295" x2="940" y2="295" stroke="rgba(240,235,224,0.15)" stroke-width="0.7"/>
+        <line x1="480" y1="585" x2="480" y2="605" stroke="rgba(240,235,224,0.15)" stroke-width="0.7"/>
+        <line x1="480" y1="605" x2="500" y2="605" stroke="rgba(240,235,224,0.15)" stroke-width="0.7"/>
+        <line x1="960" y1="585" x2="960" y2="605" stroke="rgba(240,235,224,0.15)" stroke-width="0.7"/>
+        <line x1="960" y1="605" x2="940" y2="605" stroke="rgba(240,235,224,0.15)" stroke-width="0.7"/>
+      </g>
+    </svg>
+  </div>
+
+
+  <div class="hero-content">
+    <div class="reveal" id="hero-left">
+      <div class="hero-eyebrow">Diagnostic platform for creative people.</div>
+      <h1 class="hero-headline">
+        You are not lost.<br><em>You are in<br>a pattern.</em>
+      </h1>
+      <p class="hero-sub">A diagnostic mirror for creative professionals navigating identity transition in midlife. The articles explain what's happening. The Engine shows you where you are.</p>
+      <div class="hero-actions">
+        <a href="https://life-pattern-engine.xyz" target="_blank" class="btn-primary"data-hover="GO FOR IT >>>>" >Take the diagnostic</a>
+        <a href="#model" class="btn-ghost">See the model</a>
+      </div>
+    </div>
+    <div class="hero-right-block reveal" id="hero-right" style="transition-delay:0.15s">
+      <div class="hero-phase-row">
+        <div class="hpr-num">01</div>
+        <div>
+          <div class="hpr-name">Friction</div>
+          <div class="hpr-desc">Something stops fitting. Performance continues. Internally wrong but invisible.</div>
+        </div>
+      </div>
+      <div class="hero-phase-row">
+        <div class="hpr-num">02</div>
+        <div>
+          <div class="hpr-name">Dissolution</div>
+          <div class="hpr-desc">Identity structures collapse — role, status, certainty. The freeze. The hollow.</div>
+        </div>
+      </div>
+      <div class="hero-phase-row">
+        <div class="hpr-num">03</div>
+        <div>
+          <div class="hpr-name">Reconstruction</div>
+          <div class="hpr-desc">Deliberate rebuilding from a different foundation. Not recovery. Reconfiguration.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<div class="marquee-wrap">
+  <div class="marquee-track">
+    <div class="marquee-item">Wolfsburg</div><div class="marquee-item">Ingolstadt</div>
+    <div class="marquee-item">Coventry</div><div class="marquee-item">Dearborn</div>
+    <div class="marquee-item">Turin</div><div class="marquee-item">Friction</div>
+    <div class="marquee-item">Dissolution</div><div class="marquee-item">Reconstruction</div>
+    <div class="marquee-item">Automotive</div><div class="marquee-item">Industrial Design</div>
+    <div class="marquee-item">UX Direction</div><div class="marquee-item">Product Design</div>
+    <div class="marquee-item">Wolfsburg</div><div class="marquee-item">Ingolstadt</div>
+    <div class="marquee-item">Coventry</div><div class="marquee-item">Dearborn</div>
+    <div class="marquee-item">Turin</div><div class="marquee-item">Friction</div>
+    <div class="marquee-item">Dissolution</div><div class="marquee-item">Reconstruction</div>
+    <div class="marquee-item">Automotive</div><div class="marquee-item">Industrial Design</div>
+    <div class="marquee-item">UX Direction</div><div class="marquee-item">Product Design</div>
+  </div>
+</div>
+
+<!-- ═══ THE MODEL ═══ -->
+<section id="model">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="stag">The Model — Three phases</span>
+      <span class="stag">01 / 03</span>
+    </div>
+  </div>
+
+  <!-- PHASE 01 -->
+  <!-- PHASE 01 -->
+  <div class="phase-scene" data-phase-scene="1">
+    <div class="psec-bg" style="background-image:url('https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=1920&q=90&fit=crop')"></div>
+    <div class="psec-dim"></div>
+    <div class="psec-nebula pn-1"></div>
+    <div class="psec-circles psec-circles-1">
+      <svg viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid slice" fill="none" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;width:100%;height:100%;">
+        <!-- Circle A: comes from left -->
+        <g class="ca-1">
+          <circle cx="500" cy="350" r="280" stroke="rgba(240,235,224,0.14)" stroke-width="0.6" fill="none"/>
+          <!-- corner brackets -->
+          <line x1="220" y1="210" x2="220" y2="185" stroke="rgba(240,235,224,0.30)" stroke-width="0.7"/>
+          <line x1="220" y1="185" x2="245" y2="185" stroke="rgba(240,235,224,0.30)" stroke-width="0.7"/>
+          <line x1="780" y1="210" x2="780" y2="185" stroke="rgba(240,235,224,0.30)" stroke-width="0.7"/>
+          <line x1="780" y1="185" x2="755" y2="185" stroke="rgba(240,235,224,0.30)" stroke-width="0.7"/>
+          <line x1="220" y1="490" x2="220" y2="515" stroke="rgba(240,235,224,0.30)" stroke-width="0.7"/>
+          <line x1="220" y1="515" x2="245" y2="515" stroke="rgba(240,235,224,0.30)" stroke-width="0.7"/>
+          <line x1="780" y1="490" x2="780" y2="515" stroke="rgba(240,235,224,0.30)" stroke-width="0.7"/>
+          <line x1="780" y1="515" x2="755" y2="515" stroke="rgba(240,235,224,0.30)" stroke-width="0.7"/>
+          <!-- crosshair center -->
+          <line x1="480" y1="350" x2="520" y2="350" stroke="rgba(240,235,224,0.20)" stroke-width="0.6"/>
+          <line x1="500" y1="330" x2="500" y2="370" stroke="rgba(240,235,224,0.20)" stroke-width="0.6"/>
+        </g>
+        <!-- Circle B: comes from right, slightly smaller -->
+        <g class="cb-1">
+          <circle cx="500" cy="350" r="210" stroke="rgba(240,235,224,0.10)" stroke-width="0.6" fill="none" stroke-dasharray="4 12"/>
+          <!-- corner brackets -->
+          <line x1="290" y1="255" x2="290" y2="235" stroke="rgba(240,235,224,0.20)" stroke-width="0.7"/>
+          <line x1="290" y1="235" x2="310" y2="235" stroke="rgba(240,235,224,0.20)" stroke-width="0.7"/>
+          <line x1="710" y1="255" x2="710" y2="235" stroke="rgba(240,235,224,0.20)" stroke-width="0.7"/>
+          <line x1="710" y1="235" x2="690" y2="235" stroke="rgba(240,235,224,0.20)" stroke-width="0.7"/>
+          <line x1="290" y1="445" x2="290" y2="465" stroke="rgba(240,235,224,0.20)" stroke-width="0.7"/>
+          <line x1="290" y1="465" x2="310" y2="465" stroke="rgba(240,235,224,0.20)" stroke-width="0.7"/>
+          <line x1="710" y1="445" x2="710" y2="465" stroke="rgba(240,235,224,0.20)" stroke-width="0.7"/>
+          <line x1="710" y1="465" x2="690" y2="465" stroke="rgba(240,235,224,0.20)" stroke-width="0.7"/>
+        </g>
+      </svg></div>
+    <div class="psec-card" id="card-1">
+      <div class="psec-visual"></div>
+      <div class="psec-content">
+        <div style="font-family:var(--serif);font-size:120px;font-weight:300;color:rgba(240,235,224,0.08);line-height:1;letter-spacing:-0.04em;user-select:none;pointer-events:none;position:absolute;top:24px;right:32px;">01</div>
+        <div class="phase-tag">Phase 01</div>
+        <h2 class="phase-title">Friction</h2>
+        <p class="phase-body">Something stops fitting. The role is the same. The output continues. But internally, something is wrong that no-one else can see — and you cannot name it. Performance persists while alignment collapses.</p>
+        <div class="phase-signal">Signal: everything works<br>and nothing fits</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHASE 02 -->
+  <div class="phase-scene" data-phase-scene="2">
+    <div class="psec-bg" style="background-image:url('https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=1920&q=90&fit=crop')"></div>
+    <div class="psec-dim"></div>
+    <div class="psec-nebula pn-2"></div>
+    <div class="psec-circles psec-circles-2">
+      <svg viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid slice" fill="none" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;width:100%;height:100%;">
+        <!-- Circle A: comes from left -->
+        <g class="ca-2">
+          <circle cx="500" cy="350" r="280" stroke="rgba(240,235,224,0.14)" stroke-width="0.6" fill="none"/>
+          <!-- corner brackets -->
+          <line x1="220" y1="210" x2="220" y2="185" stroke="rgba(240,235,224,0.30)" stroke-width="0.7"/>
+          <line x1="220" y1="185" x2="245" y2="185" stroke="rgba(240,235,224,0.30)" stroke-width="0.7"/>
+          <line x1="780" y1="210" x2="780" y2="185" stroke="rgba(240,235,224,0.30)" stroke-width="0.7"/>
+          <line x1="780" y1="185" x2="755" y2="185" stroke="rgba(240,235,224,0.30)" stroke-width="0.7"/>
+          <line x1="220" y1="490" x2="220" y2="515" stroke="rgba(240,235,224,0.30)" stroke-width="0.7"/>
+          <line x1="220" y1="515" x2="245" y2="515" stroke="rgba(240,235,224,0.30)" stroke-width="0.7"/>
+          <line x1="780" y1="490" x2="780" y2="515" stroke="rgba(240,235,224,0.30)" stroke-width="0.7"/>
+          <line x1="780" y1="515" x2="755" y2="515" stroke="rgba(240,235,224,0.30)" stroke-width="0.7"/>
+          <!-- crosshair center -->
+          <line x1="480" y1="350" x2="520" y2="350" stroke="rgba(240,235,224,0.20)" stroke-width="0.6"/>
+          <line x1="500" y1="330" x2="500" y2="370" stroke="rgba(240,235,224,0.20)" stroke-width="0.6"/>
+        </g>
+        <!-- Circle B: comes from right, slightly smaller -->
+        <g class="cb-2">
+          <circle cx="500" cy="350" r="210" stroke="rgba(240,235,224,0.10)" stroke-width="0.6" fill="none" stroke-dasharray="4 12"/>
+          <!-- corner brackets -->
+          <line x1="290" y1="255" x2="290" y2="235" stroke="rgba(240,235,224,0.20)" stroke-width="0.7"/>
+          <line x1="290" y1="235" x2="310" y2="235" stroke="rgba(240,235,224,0.20)" stroke-width="0.7"/>
+          <line x1="710" y1="255" x2="710" y2="235" stroke="rgba(240,235,224,0.20)" stroke-width="0.7"/>
+          <line x1="710" y1="235" x2="690" y2="235" stroke="rgba(240,235,224,0.20)" stroke-width="0.7"/>
+          <line x1="290" y1="445" x2="290" y2="465" stroke="rgba(240,235,224,0.20)" stroke-width="0.7"/>
+          <line x1="290" y1="465" x2="310" y2="465" stroke="rgba(240,235,224,0.20)" stroke-width="0.7"/>
+          <line x1="710" y1="445" x2="710" y2="465" stroke="rgba(240,235,224,0.20)" stroke-width="0.7"/>
+          <line x1="710" y1="465" x2="690" y2="465" stroke="rgba(240,235,224,0.20)" stroke-width="0.7"/>
+        </g>
+      </svg></div>
+    <div class="psec-card" id="card-2" style="direction:rtl;">
+      <div class="psec-visual" style="direction:ltr;border-right:none;border-left:1px solid rgba(240,235,224,0.12);"></div>
+      <div class="psec-content" style="direction:ltr;border-right:1px solid var(--rule);border-left:none;">
+        <div style="font-family:var(--serif);font-size:120px;font-weight:300;color:rgba(240,235,224,0.08);line-height:1;letter-spacing:-0.04em;user-select:none;pointer-events:none;position:absolute;top:24px;right:32px;">02</div>
+        <div class="phase-tag">Phase 02</div>
+        <h2 class="phase-title">Dissolution</h2>
+        <p class="phase-body">Identity structures collapse. Role, status, certainty — gone. The freeze. The hollow. The silence in meetings where you used to speak with authority. The structures that held the self are no longer load-bearing.</p>
+        <div class="phase-signal">Signal: the structures that held<br>the self are no longer load-bearing</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHASE 03 -->
+  <div class="phase-scene" data-phase-scene="3">
+    <div class="psec-bg" style="background-image:url('https://images.unsplash.com/photo-1464802686167-b939a6910659?w=1920&q=90&fit=crop')"></div>
+    <div class="psec-dim"></div>
+    <div class="psec-nebula pn-3"></div>
+    <div class="psec-circles psec-circles-3">
+      <svg viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid slice" fill="none" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;width:100%;height:100%;">
+        <!-- Circle A: comes from left -->
+        <g class="ca-3">
+          <circle cx="500" cy="350" r="280" stroke="rgba(240,235,224,0.14)" stroke-width="0.6" fill="none"/>
+          <!-- corner brackets -->
+          <line x1="220" y1="210" x2="220" y2="185" stroke="rgba(240,235,224,0.30)" stroke-width="0.7"/>
+          <line x1="220" y1="185" x2="245" y2="185" stroke="rgba(240,235,224,0.30)" stroke-width="0.7"/>
+          <line x1="780" y1="210" x2="780" y2="185" stroke="rgba(240,235,224,0.30)" stroke-width="0.7"/>
+          <line x1="780" y1="185" x2="755" y2="185" stroke="rgba(240,235,224,0.30)" stroke-width="0.7"/>
+          <line x1="220" y1="490" x2="220" y2="515" stroke="rgba(240,235,224,0.30)" stroke-width="0.7"/>
+          <line x1="220" y1="515" x2="245" y2="515" stroke="rgba(240,235,224,0.30)" stroke-width="0.7"/>
+          <line x1="780" y1="490" x2="780" y2="515" stroke="rgba(240,235,224,0.30)" stroke-width="0.7"/>
+          <line x1="780" y1="515" x2="755" y2="515" stroke="rgba(240,235,224,0.30)" stroke-width="0.7"/>
+          <!-- crosshair center -->
+          <line x1="480" y1="350" x2="520" y2="350" stroke="rgba(240,235,224,0.20)" stroke-width="0.6"/>
+          <line x1="500" y1="330" x2="500" y2="370" stroke="rgba(240,235,224,0.20)" stroke-width="0.6"/>
+        </g>
+        <!-- Circle B: comes from right, slightly smaller -->
+        <g class="cb-3">
+          <circle cx="500" cy="350" r="210" stroke="rgba(240,235,224,0.10)" stroke-width="0.6" fill="none" stroke-dasharray="4 12"/>
+          <!-- corner brackets -->
+          <line x1="290" y1="255" x2="290" y2="235" stroke="rgba(240,235,224,0.20)" stroke-width="0.7"/>
+          <line x1="290" y1="235" x2="310" y2="235" stroke="rgba(240,235,224,0.20)" stroke-width="0.7"/>
+          <line x1="710" y1="255" x2="710" y2="235" stroke="rgba(240,235,224,0.20)" stroke-width="0.7"/>
+          <line x1="710" y1="235" x2="690" y2="235" stroke="rgba(240,235,224,0.20)" stroke-width="0.7"/>
+          <line x1="290" y1="445" x2="290" y2="465" stroke="rgba(240,235,224,0.20)" stroke-width="0.7"/>
+          <line x1="290" y1="465" x2="310" y2="465" stroke="rgba(240,235,224,0.20)" stroke-width="0.7"/>
+          <line x1="710" y1="445" x2="710" y2="465" stroke="rgba(240,235,224,0.20)" stroke-width="0.7"/>
+          <line x1="710" y1="465" x2="690" y2="465" stroke="rgba(240,235,224,0.20)" stroke-width="0.7"/>
+        </g>
+      </svg></div>
+    <div class="psec-card" id="card-3">
+      <div class="psec-visual"></div>
+      <div class="psec-content">
+        <div style="font-family:var(--serif);font-size:120px;font-weight:300;color:rgba(240,235,224,0.08);line-height:1;letter-spacing:-0.04em;user-select:none;pointer-events:none;position:absolute;top:24px;right:32px;">03</div>
+        <div class="phase-tag">Phase 03</div>
+        <h2 class="phase-title">Reconstruction</h2>
+        <p class="phase-body">Deliberate rebuilding from a different foundation. Not recovery to the previous state. Not healing. Reconfiguration — into something that holds more of who you actually are.</p>
+        <div class="phase-signal">Signal: building from values,<br>not from role or institution</div>
+      </div>
+    </div>
+  </div>
+  </div>
+</section>
+
+<!-- ═══ DIAGNOSTIC ═══ -->
+<section id="diagnostic" class="phase-scene" data-phase-scene="diag" style="min-height:80vh;">
+  <div class="psec-bg" style="background-image:url('https://images.unsplash.com/photo-1509773896068-7fd415d91e2e?w=1920&q=90&fit=crop')"></div>
+  <div class="psec-dim"></div>
+  <div class="psec-nebula pn-2"></div>
+  <div class="psec-circles psec-circles-diag">
+    <svg viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid slice" fill="none" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;width:100%;height:100%;">
+      <g class="ca-diag">
+        <circle cx="500" cy="350" r="280" stroke="rgba(240,235,224,0.12)" stroke-width="0.6" fill="none"/>
+        <line x1="220" y1="210" x2="220" y2="185" stroke="rgba(240,235,224,0.28)" stroke-width="0.7"/>
+        <line x1="220" y1="185" x2="245" y2="185" stroke="rgba(240,235,224,0.28)" stroke-width="0.7"/>
+        <line x1="780" y1="210" x2="780" y2="185" stroke="rgba(240,235,224,0.28)" stroke-width="0.7"/>
+        <line x1="780" y1="185" x2="755" y2="185" stroke="rgba(240,235,224,0.28)" stroke-width="0.7"/>
+        <line x1="220" y1="490" x2="220" y2="515" stroke="rgba(240,235,224,0.28)" stroke-width="0.7"/>
+        <line x1="220" y1="515" x2="245" y2="515" stroke="rgba(240,235,224,0.28)" stroke-width="0.7"/>
+        <line x1="780" y1="490" x2="780" y2="515" stroke="rgba(240,235,224,0.28)" stroke-width="0.7"/>
+        <line x1="780" y1="515" x2="755" y2="515" stroke="rgba(240,235,224,0.28)" stroke-width="0.7"/>
+        <line x1="480" y1="350" x2="520" y2="350" stroke="rgba(240,235,224,0.18)" stroke-width="0.6"/>
+        <line x1="500" y1="330" x2="500" y2="370" stroke="rgba(240,235,224,0.18)" stroke-width="0.6"/>
+      </g>
+      <g class="cb-diag">
+        <circle cx="500" cy="350" r="210" stroke="rgba(240,235,224,0.08)" stroke-width="0.6" fill="none" stroke-dasharray="4 12"/>
+      </g>
+    </svg>
+  </div>
+  <div class="psec-card" id="card-diag" style="align-items:stretch;">
+    <div class="psec-content" style="border-right:1px solid var(--rule);border-left:none;">
+      <div class="diag-label">life-pattern-engine.xyz</div>
+      <h2 class="diag-title">Find your pattern.</h2>
+      <p class="diag-body">28 questions built from clinical research in identity transition and 18 years inside design institutions. The result is not a personality type. It is a precise location — where you are in the pattern, right now.</p>
+      <div class="diag-stats" style="margin-bottom:40px;">
+        <div><div class="dstat-num">28</div><div class="dstat-label">Questions</div></div>
+        <div><div class="dstat-num">15</div><div class="dstat-label">Archetypes</div></div>
+        <div><div class="dstat-num">~9</div><div class="dstat-label">Minutes</div></div>
+      </div>
+      <a href="#" class="btn-primary"data-hover="GO FOR IT >>>>" style="text-align:center; display:flex; align-items:center; justify-content:center;">Take the diagnostic →</a>
+    </div>
+    <div class="psec-visual" style="border-right:none;border-left:none;min-height:400px;"></div>
+  </div>
+</section>
+
+<!-- ═══ NIGHT SKY BAND ═══ -->
+<div class="sky-band">
+  <div class="sky-band-bg"></div>
+  <div class="sky-band-dim"></div>
+  <canvas id="sky-canvas"></canvas>
+  <div class="sky-overlay"></div>
+  <!-- Planetary circles -->
+  <div class="hero-circles">
+    <svg viewBox="0 0 1440 500" preserveAspectRatio="xMidYMid slice" fill="none" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;width:100%;height:100%;">
+      <g class="hero-ca">
+        <circle cx="720" cy="250" r="260" stroke="rgba(240,235,224,0.11)" stroke-width="0.6" fill="none"/>
+        <line x1="460" y1="140" x2="460" y2="118" stroke="rgba(240,235,224,0.25)" stroke-width="0.7"/>
+        <line x1="460" y1="118" x2="482" y2="118" stroke="rgba(240,235,224,0.25)" stroke-width="0.7"/>
+        <line x1="980" y1="140" x2="980" y2="118" stroke="rgba(240,235,224,0.25)" stroke-width="0.7"/>
+        <line x1="980" y1="118" x2="958" y2="118" stroke="rgba(240,235,224,0.25)" stroke-width="0.7"/>
+        <line x1="460" y1="360" x2="460" y2="382" stroke="rgba(240,235,224,0.25)" stroke-width="0.7"/>
+        <line x1="460" y1="382" x2="482" y2="382" stroke="rgba(240,235,224,0.25)" stroke-width="0.7"/>
+        <line x1="980" y1="360" x2="980" y2="382" stroke="rgba(240,235,224,0.25)" stroke-width="0.7"/>
+        <line x1="980" y1="382" x2="958" y2="382" stroke="rgba(240,235,224,0.25)" stroke-width="0.7"/>
+        <line x1="705" y1="250" x2="735" y2="250" stroke="rgba(240,235,224,0.18)" stroke-width="0.6"/>
+        <line x1="720" y1="235" x2="720" y2="265" stroke="rgba(240,235,224,0.18)" stroke-width="0.6"/>
+      </g>
+      <g class="hero-cb">
+        <circle cx="720" cy="250" r="175" stroke="rgba(240,235,224,0.07)" stroke-width="0.6" fill="none" stroke-dasharray="5 14"/>
+        <line x1="545" y1="160" x2="545" y2="143" stroke="rgba(240,235,224,0.15)" stroke-width="0.7"/>
+        <line x1="545" y1="143" x2="562" y2="143" stroke="rgba(240,235,224,0.15)" stroke-width="0.7"/>
+        <line x1="895" y1="160" x2="895" y2="143" stroke="rgba(240,235,224,0.15)" stroke-width="0.7"/>
+        <line x1="895" y1="143" x2="878" y2="143" stroke="rgba(240,235,224,0.15)" stroke-width="0.7"/>
+        <line x1="545" y1="340" x2="545" y2="357" stroke="rgba(240,235,224,0.15)" stroke-width="0.7"/>
+        <line x1="545" y1="357" x2="562" y2="357" stroke="rgba(240,235,224,0.15)" stroke-width="0.7"/>
+        <line x1="895" y1="340" x2="895" y2="357" stroke="rgba(240,235,224,0.15)" stroke-width="0.7"/>
+        <line x1="895" y1="357" x2="878" y2="357" stroke="rgba(240,235,224,0.15)" stroke-width="0.7"/>
+      </g>
+    </svg>
+  </div>
+  <div class="sky-content reveal">
+    <div class="sky-overline">For creative people who got a little stuck</div>
+    <h2 class="sky-headline">Not a therapy blog.<br><em>Not a career coach.</em><br>A diagnostic mirror.</h2>
+  </div>
+</div>
+
+<!-- ═══ ARTICLES ═══ -->
+<section id="articles">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="stag">Articles — One per phase</span>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <button class="art-arrow" id="art-prev" aria-label="Previous">←</button>
+        <button class="art-arrow" id="art-next" aria-label="Next">→</button>
+        <a href="#" class="stag-link">All articles →</a>
+      </div>
+    </div>
+  </div>
+  <div class="art-carousel-wrap">
+    <div class="articles-grid" id="art-track">
+      <a href="#" class="art-card reveal">
+        <div class="art-ptag">Phase 01 · Friction</div>
+        <h3 class="art-title">The Invisible Misalignment: When Everything Works and Nothing Fits</h3>
+        <p class="art-excerpt">You are still delivering. Your reviews are still positive. But the thing that made the work feel like yours has moved somewhere you cannot locate.</p>
+        <div class="art-meta"><span class="art-read">Read →</span><span class="art-time">12 min</span></div>
+      </a>
+      <a href="#" class="art-card reveal" style="transition-delay:0.1s">
+        <div class="art-ptag">Phase 02 · Dissolution</div>
+        <h3 class="art-title">The Hollow: What Senior Designers Don't Say in Meetings</h3>
+        <p class="art-excerpt">There is a specific silence that arrives when the person with the most experience stops believing their experience is the right currency.</p>
+        <div class="art-meta"><span class="art-read">Read →</span><span class="art-time">9 min</span></div>
+      </a>
+      <a href="#" class="art-card reveal" style="transition-delay:0.2s">
+        <div class="art-ptag">Phase 03 · Reconstruction</div>
+        <h3 class="art-title">After the Studio: Building Identity Outside the Institution</h3>
+        <p class="art-excerpt">The designers who reconstruct successfully are not the ones who find a new institution fastest. They are the ones who stop needing one.</p>
+        <div class="art-meta"><span class="art-read">Read →</span><span class="art-time">14 min</span></div>
+      </a>
+    </div>
+    <div class="art-dots" id="art-dots"></div>
+  </div>
+</section>
+
+<!-- ═══ EMAIL ═══ -->
+<section id="digest">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="stag">Weekly Digest</span>
+      <span class="stag">03 / 03</span>
+    </div>
+    <div class="email-wrap">
+      <div class="email-left reveal">
+        <div class="email-label">The Pattern · Weekly</div>
+        <h2 class="email-title">One article.<br>One archetype.<br><em>Every week.</em></h2>
+        <p class="email-body">Not a newsletter. A diagnostic feed — matched to the phase you're in. Each issue takes one archetype from the Pattern framework and builds a full picture: the signals, the freeze, what reconstruction looks like from inside that configuration.</p>
+      </div>
+      <div class="email-right reveal" style="transition-delay:0.12s">
+        <form class="email-form" onsubmit="return false">
+          <div class="form-field">
+            <label class="form-label">Weekly Digest</label>
+            <p style="font-family:var(--serif);font-size:28px;font-weight:300;font-style:italic;color:var(--fg-dim);line-height:1.3;margin-bottom:28px;">The signal, not the noise.</p>
+            <input type="email" class="form-input" placeholder="your@email.com">
+          </div>
+          <button type="submit" class="form-submit"data-hover="GO FOR IT >>>>" >Join →</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">the<span>·</span>pattern</div>
+  <div class="footer-copy">© 2026 · the-pattern.xyz</div>
+  <div class="footer-links">
+    <a href="#" class="footer-link">Articles</a>
+    <a href="#" class="footer-link">Diagnostic</a>
+    <a href="mailto:lifepatternengine@gmail.com" class="footer-link">Contact</a>
+  </div>
+</footer>
+
+<script>
+// ── STARFIELD UTILITY ──
+function createStarfield(canvas, count, options = {}) {
+  const ctx = canvas.getContext('2d');
+  const stars = [];
+  const { speed = 0, twinkle = true, color = 'rgba(240,235,224,' } = options;
+
+  function resize() {
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+  }
+
+  function initStars() {
+    stars.length = 0;
+    for (let i = 0; i < count; i++) {
+      stars.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: Math.random() * 1.4 + 0.2,
+        a: Math.random(),
+        da: (Math.random() - 0.5) * 0.008,
+        speed: Math.random() * speed
+      });
+    }
+  }
+
+  function draw(t) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    stars.forEach(s => {
+      if (twinkle) {
+        s.a += s.da;
+        if (s.a > 1 || s.a < 0.1) s.da *= -1;
+        s.a = Math.max(0.05, Math.min(1, s.a));
+      }
+      if (speed) s.y += s.speed;
+      if (s.y > canvas.height) { s.y = 0; s.x = Math.random() * canvas.width; }
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = color + s.a.toFixed(2) + ')';
+      ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+
+  resize();
+  initStars();
+  requestAnimationFrame(draw);
+  new ResizeObserver(() => { resize(); initStars(); }).observe(canvas);
+}
+
+// ── PHASE SCENES: shrinking card + converging circles ──
+function easeInOut(t) { return t < 0.5 ? 2*t*t : -1+(4-2*t)*t; }
+
+function updatePhaseScenes() {
+  document.querySelectorAll('.phase-scene').forEach((scene, i) => {
+    const rect = scene.getBoundingClientRect();
+    const vh = window.innerHeight;
+    const center = rect.top + rect.height / 2;
+    const raw = 1 - (center - vh / 2) / (vh * 0.9);
+    const p = Math.max(0, Math.min(1, raw));
+    const eased = easeInOut(p);
+    const n = scene.dataset.phaseScene || 'diag';
+
+    // Card shrink
+    const card = scene.querySelector('.psec-card');
+    if (card && card.id) {
+      const margin = 14 - eased * 10;
+      card.style.width = `${100 - margin * 2}%`;
+      card.style.marginLeft = `${margin}%`;
+    }
+
+    // Circles converge
+    const spread = (1 - eased) * (window.innerWidth < 768 ? 160 : 340);
+    const dir = -1;  // all sections: circles come from center outward
+    const caEl = scene.querySelector(`.ca-${n}`);
+    const cbEl = scene.querySelector(`.cb-${n}`);
+    if (caEl) caEl.style.transform = `translateX(${-spread * dir}px)`;
+    if (cbEl) cbEl.style.transform = `translateX(${spread * dir}px)`;
+
+    // Text reveal
+    if (p > 0.35 && !scene.classList.contains('text-on')) scene.classList.add('text-on');
+
+    // Bg parallax
+    const bg = scene.querySelector('.psec-bg');
+    if (bg) {
+      const ratio = (center - vh / 2) / vh;
+      bg.style.transform = `translateY(${ratio * 60}px)`;
+    }
+  });
+}
+
+window.addEventListener('scroll', updatePhaseScenes, { passive: true });
+updatePhaseScenes();
+
+// ── SCROLL PARALLAX for hero ──
+
+// Scroll to top on load
+window.scrollTo(0, 0);
+history.scrollRestoration = 'manual';
+
+// Hero bg photo load
+const heroBg = document.getElementById('hero-bg-photo');
+const img = new Image();
+img.onload = () => heroBg.classList.add('loaded');
+img.src = 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1920&q=90&fit=crop';
+
+// Hero starfield
+const heroCanvas = document.getElementById('star-canvas');
+createStarfield(heroCanvas, 320, { twinkle: true, color: 'rgba(240,235,224,' });
+
+// Sky band starfield
+const skyCanvas = document.getElementById('sky-canvas');
+createStarfield(skyCanvas, 200, { twinkle: true, color: 'rgba(240,235,224,' });
+
+// Phase canvases
+document.querySelectorAll('.phase-canvas').forEach(canvas => {
+  const phase = canvas.dataset.phase;
+  const counts = { '1': 180, '2': 140, '3': 200 };
+  createStarfield(canvas, counts[phase] || 160, { twinkle: true });
+});
+
+// ── HAMBURGER ──
+const hamburger = document.getElementById('nav-hamburger');
+const drawer = document.getElementById('mobile-drawer');
+function closeDrawer() {
+  hamburger.classList.remove('open');
+  drawer.classList.remove('open');
+}
+hamburger?.addEventListener('click', () => {
+  hamburger.classList.toggle('open');
+  drawer.classList.toggle('open');
+});
+
+// ── NAV SCROLL ──
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 60);
+});
+
+// ── ARTICLE CAROUSEL ──
+(function() {
+  const track = document.getElementById('art-track');
+  const dotsEl = document.getElementById('art-dots');
+  const prevBtn = document.getElementById('art-prev');
+  const nextBtn = document.getElementById('art-next');
+  if (!track) return;
+
+  const cards = track.querySelectorAll('.art-card');
+  const total = cards.length;
+  let current = 0;
+  let isMobile = window.innerWidth < 768;
+
+  // Build dots
+  cards.forEach((_, i) => {
+    const dot = document.createElement('button');
+    dot.className = 'art-dot' + (i === 0 ? ' active' : '');
+    dot.addEventListener('click', () => goTo(i));
+    dotsEl.appendChild(dot);
+  });
+
+  function goTo(n) {
+    current = Math.max(0, Math.min(total - 1, n));
+    if (isMobile) {
+      track.style.transform = `translateX(${-current * 100}%)`;
+    }
+    dotsEl.querySelectorAll('.art-dot').forEach((d, i) => d.classList.toggle('active', i === current));
+    prevBtn.disabled = current === 0;
+    nextBtn.disabled = current === total - 1;
+  }
+
+  prevBtn.addEventListener('click', () => goTo(current - 1));
+  nextBtn.addEventListener('click', () => goTo(current + 1));
+
+  // Touch swipe
+  let startX = 0;
+  track.addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, { passive: true });
+  track.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - startX;
+    if (Math.abs(dx) > 40) goTo(dx < 0 ? current + 1 : current - 1);
+  }, { passive: true });
+
+  window.addEventListener('resize', () => {
+    isMobile = window.innerWidth < 768;
+    if (!isMobile) track.style.transform = '';
+  });
+
+  goTo(0);
+})();
+
+// ── REVEAL ──
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add('on'); observer.unobserve(e.target); }
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+setTimeout(() => {
+  document.querySelector('#hero-left')?.classList.add('on');
+  setTimeout(() => document.querySelector('#hero-right')?.classList.add('on'), 150);
+}, 100);
+</script>
+</body>
+</html>
