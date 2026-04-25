@@ -529,6 +529,44 @@
     transition: background 0.2s, color 0.2s; align-self: flex-start;
   }
   .form-submit:hover { background: var(--accent); color: var(--fg); }
+  .form-submit:disabled { opacity: 0.5; cursor: wait; }
+  .form-status {
+    margin-top: 14px; min-height: 16px;
+    font-family: var(--mono); font-size: 10px; font-weight: 400;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--fg-dim); transition: color 0.2s;
+  }
+  .form-status.is-error { color: oklch(0.72 0.16 28); }
+  .form-success {
+    display: none;
+    border: 1px solid var(--rule);
+    padding: 28px 28px 26px;
+    border-radius: 4px;
+    background: rgba(240,235,224,0.02);
+  }
+  .form-success.is-on { display: block; animation: fadeIn 0.5s ease-out; }
+  .form-success-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 1px solid var(--accent-bright);
+    color: var(--accent-bright); font-size: 16px;
+    margin-bottom: 18px;
+  }
+  .form-success-title {
+    font-family: var(--serif); font-size: 26px; font-weight: 300;
+    line-height: 1.3; color: var(--fg); margin-bottom: 12px;
+  }
+  .form-success-title em { font-style: italic; color: var(--fg-dim); }
+  .form-success-body {
+    font-family: var(--mono); font-size: 11px; line-height: 1.9;
+    color: var(--fg-dim); margin-bottom: 18px;
+  }
+  .form-success-email { color: var(--fg); }
+  .form-success-meta {
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--fg-muted); line-height: 1.7;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
   /* ── FOOTER ── */
   footer {
@@ -1120,7 +1158,7 @@
         <div><div class="dstat-num">15</div><div class="dstat-label">Archetypes</div></div>
         <div><div class="dstat-num">~9</div><div class="dstat-label">Minutes</div></div>
       </div>
-      <a href="#" class="btn-primary"data-hover="GO FOR IT >>>>" style="text-align:center; display:flex; align-items:center; justify-content:center;">Take the diagnostic →</a>
+      <a href="https://life-pattern-engine.xyz" target="_blank" class="btn-primary"data-hover="GO FOR IT >>>>" style="text-align:center; display:flex; align-items:center; justify-content:center;">Take the diagnostic →</a>
     </div>
     <div class="psec-visual" style="border-right:none;border-left:none;min-height:400px;"></div>
   </div>
@@ -1183,21 +1221,21 @@
     <div class="articles-grid" id="art-track">
       <a href="#" class="art-card reveal">
         <div class="art-ptag">Phase 01 · Friction</div>
-        <h3 class="art-title">The Invisible Misalignment: When Everything Works and Nothing Fits</h3>
-        <p class="art-excerpt">You are still delivering. Your reviews are still positive. But the thing that made the work feel like yours has moved somewhere you cannot locate.</p>
-        <div class="art-meta"><span class="art-read">Read →</span><span class="art-time">12 min</span></div>
+        <h3 class="art-title">The High Performer's Paradox: Why You're Paralyzed Despite Outward Productivity</h3>
+        <p class="art-excerpt">A nervous-system state that lets senior professionals execute flawlessly by day while collapsing internally — frequently misdiagnosed as burnout or depression.</p>
+        <div class="art-meta"><span class="art-read">Read →</span><span class="art-time">10 min</span></div>
       </a>
       <a href="#" class="art-card reveal" style="transition-delay:0.1s">
         <div class="art-ptag">Phase 02 · Dissolution</div>
-        <h3 class="art-title">The Hollow: What Senior Designers Don't Say in Meetings</h3>
-        <p class="art-excerpt">There is a specific silence that arrives when the person with the most experience stops believing their experience is the right currency.</p>
+        <h3 class="art-title">The Job Ate the Person: Why Your Title Is the Only Answer You Have</h3>
+        <p class="art-excerpt">If losing your job would cost you your sense of self, you don't have a career problem. You have a single point of failure.</p>
         <div class="art-meta"><span class="art-read">Read →</span><span class="art-time">9 min</span></div>
       </a>
       <a href="#" class="art-card reveal" style="transition-delay:0.2s">
         <div class="art-ptag">Phase 03 · Reconstruction</div>
-        <h3 class="art-title">After the Studio: Building Identity Outside the Institution</h3>
-        <p class="art-excerpt">The designers who reconstruct successfully are not the ones who find a new institution fastest. They are the ones who stop needing one.</p>
-        <div class="art-meta"><span class="art-read">Read →</span><span class="art-time">14 min</span></div>
+        <h3 class="art-title">The Quiet Dissolution: When a Long Career Stops Fitting</h3>
+        <p class="art-excerpt">When your job stops fitting but you can't tell if you're burned out, bored, or disappearing — the distinction matters more than you think.</p>
+        <div class="art-meta"><span class="art-read">Read →</span><span class="art-time">12 min</span></div>
       </a>
     </div>
     <div class="art-dots" id="art-dots"></div>
@@ -1218,14 +1256,21 @@
         <p class="email-body">Not a newsletter. A diagnostic feed — matched to the phase you're in. Each issue takes one archetype from the Pattern framework and builds a full picture: the signals, the freeze, what reconstruction looks like from inside that configuration.</p>
       </div>
       <div class="email-right reveal" style="transition-delay:0.12s">
-        <form class="email-form" onsubmit="return false">
+        <form class="email-form" id="subscribe-form" novalidate>
           <div class="form-field">
-            <label class="form-label">Weekly Digest</label>
+            <label class="form-label" for="subscribe-email">Weekly Digest</label>
             <p style="font-family:var(--serif);font-size:28px;font-weight:300;font-style:italic;color:var(--fg-dim);line-height:1.3;margin-bottom:28px;">The signal, not the noise.</p>
-            <input type="email" class="form-input" placeholder="your@email.com">
+            <input type="email" id="subscribe-email" name="email" class="form-input" placeholder="your@email.com" required autocomplete="email">
           </div>
-          <button type="submit" class="form-submit"data-hover="GO FOR IT >>>>" >Join →</button>
+          <button type="submit" class="form-submit" id="subscribe-submit" data-hover="GO FOR IT >>>>">Join →</button>
+          <div class="form-status" id="subscribe-status" role="status" aria-live="polite"></div>
         </form>
+        <div class="form-success" id="subscribe-success" role="status" aria-live="polite">
+          <div class="form-success-icon">✓</div>
+          <div class="form-success-title">Check your inbox.<br><em>Confirmation on the way.</em></div>
+          <p class="form-success-body">We just sent a note to <span class="form-success-email" id="subscribe-success-email">your address</span>. Open it to confirm you're in — that locks you in for the weekly digest.</p>
+          <div class="form-success-meta">No email in 2 minutes? Check spam, or try again with a different address.</div>
+        </div>
       </div>
     </div>
   </div>
@@ -1429,6 +1474,61 @@ window.addEventListener('scroll', () => {
   });
 
   goTo(0);
+})();
+
+// ── SUBSCRIBE FORM ──
+(function() {
+  const form = document.getElementById('subscribe-form');
+  if (!form) return;
+  const input = document.getElementById('subscribe-email');
+  const submit = document.getElementById('subscribe-submit');
+  const status = document.getElementById('subscribe-status');
+  const success = document.getElementById('subscribe-success');
+  const successEmail = document.getElementById('subscribe-success-email');
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  function setStatus(msg, isError) {
+    status.textContent = msg;
+    status.classList.toggle('is-error', !!isError);
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = (input.value || '').trim();
+    if (!emailRe.test(email)) {
+      setStatus('Enter a valid email address.', true);
+      input.focus();
+      return;
+    }
+
+    setStatus('Sending…', false);
+    submit.disabled = true;
+    const originalLabel = submit.textContent;
+    submit.textContent = 'Sending…';
+
+    try {
+      const res = await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, source: 'digest' }),
+      });
+
+      let data = {};
+      try { data = await res.json(); } catch (_) {}
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Something went wrong. Please try again.');
+      }
+
+      successEmail.textContent = email;
+      form.style.display = 'none';
+      success.classList.add('is-on');
+    } catch (err) {
+      setStatus(err.message || 'Something went wrong. Please try again.', true);
+      submit.disabled = false;
+      submit.textContent = originalLabel;
+    }
+  });
 })();
 
 // ── REVEAL ──
