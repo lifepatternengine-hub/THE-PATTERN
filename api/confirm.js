@@ -41,6 +41,7 @@ module.exports = async (req, res) => {
         body: JSON.stringify({
           parent: { database_id: process.env.NOTION_NEWSLETTER_DB_ID },
           properties: {
+            Name: { title: [{ text: { content: email } }] },
             Email: { email },
             Date: { date: { start: new Date().toISOString() } },
             Source: { rich_text: [{ text: { content: source } }] },
