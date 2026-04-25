@@ -23,6 +23,15 @@ module.exports = async (req, res) => {
     return res.status(400).json({ error: 'Invalid email address.' });
   }
 
+  const debug = {
+    has_resend_key: !!process.env.RESEND_API_KEY,
+    has_resend_from: !!process.env.RESEND_FROM,
+    resend_from: process.env.RESEND_FROM || '(not set, using default)',
+    has_notion_token: !!process.env.NOTION_TOKEN,
+    has_notion_db: !!process.env.NOTION_NEWSLETTER_DB_ID,
+  };
+  console.log('[subscribe] env check:', debug);
+
   try {
     // 1. Save to Notion (optional, non-blocking on failure)
     if (process.env.NOTION_TOKEN && process.env.NOTION_NEWSLETTER_DB_ID) {
@@ -45,38 +54,58 @@ module.exports = async (req, res) => {
         });
         if (!notionRes.ok) {
           const err = await notionRes.json().catch(() => ({}));
-          console.error('Notion error:', err);
+          console.error('[subscribe] Notion error:', err);
+        } else {
+          console.log('[subscribe] Notion: row created');
         }
       } catch (err) {
-        console.error('Notion request failed:', err);
+        console.error('[subscribe] Notion request failed:', err);
       }
+    } else {
+      console.log('[subscribe] Notion: skipped (env vars not set)');
     }
 
     // 2. Send confirmation email via Resend HTTP API
-    if (process.env.RESEND_API_KEY) {
-      const resendRes = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from: process.env.RESEND_FROM || 'The Pattern <hello@the-pattern.xyz>',
-          to: [email],
-          subject: "You're in — The Pattern",
-          html: confirmationEmail(email),
-        }),
+    if (!process.env.RESEND_API_KEY) {
+      console.error('[subscribe] Resend: SKIPPED — RESEND_API_KEY not set in this deployment env');
+      return res.status(500).json({
+        error: 'Email service not configured.',
+        debug,
       });
-      if (!resendRes.ok) {
-        const err = await resendRes.json().catch(() => ({}));
-        console.error('Resend error:', err);
-      }
     }
 
-    return res.status(200).json({ success: true });
+    const fromAddr = process.env.RESEND_FROM || 'The Pattern <hello@the-pattern.xyz>';
+    console.log('[subscribe] Resend: sending from', fromAddr, 'to', email);
+
+    const resendRes = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: fromAddr,
+        to: [email],
+        subject: "You're in — The Pattern",
+        html: confirmationEmail(email),
+      }),
+    });
+
+    const resendBody = await resendRes.json().catch(() => ({}));
+    if (!resendRes.ok) {
+      console.error('[subscribe] Resend error:', resendRes.status, resendBody);
+      return res.status(502).json({
+        error: 'Email send failed.',
+        resend_status: resendRes.status,
+        resend_body: resendBody,
+      });
+    }
+
+    console.log('[subscribe] Resend: sent', resendBody);
+    return res.status(200).json({ success: true, id: resendBody.id });
   } catch (err) {
-    console.error('Subscribe error:', err);
-    return res.status(500).json({ error: 'Something went wrong. Please try again.' });
+    console.error('[subscribe] Unexpected error:', err);
+    return res.status(500).json({ error: 'Something went wrong. Please try again.', detail: String(err && err.message || err) });
   }
 };
 
