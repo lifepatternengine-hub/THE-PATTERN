@@ -2,6 +2,7 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "buildCommand": "node scripts/build-articles.mjs",
+  "outputDirectory": ".",
   "crons": [
     {
       "path": "/api/rebuild",
