@@ -17,6 +17,39 @@ const ROOT = join(__dirname, '..');
 
 const PATTERN_TO_PHASE = { Friction: '1', Dissolution: '2', Reconstruction: '3' };
 
+// Pool of cover images sourced from https://unsplash.com/s/photos/nebula
+// (free, non-Plus). Used as fallback when an article has no Cover set in
+// Notion; one is picked deterministically per slug so the same article
+// always renders with the same image.
+const NEBULA_COVERS = [
+  '1462332420958-a05d1e002413',
+  '1608178398319-48f814d0750c',
+  '1504333638930-c8787321eee0',
+  '1610296669228-602fa827fc1f',
+  '1716881139357-ddcb2f52940c',
+  '1594683734152-0eccf2501041',
+  '1706800696671-570820e7ff39',
+  '1502134249126-9f3755a50d78',
+  '1462331940025-496dfbfc7564',
+  '1717705422478-0b42e89e06b7',
+  '1606125784258-570fc63c22c1',
+  '1677357623576-7c8aab08da22',
+  '1570556319136-3cfc640168a4',
+  '1684019608073-e79bc1642ec5',
+  '1684018864429-42c0966d71e0',
+];
+
+const hashString = (s) => {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
+};
+
+const pickNebulaCover = (key) => {
+  const id = NEBULA_COVERS[hashString(key || '') % NEBULA_COVERS.length];
+  return `https://images.unsplash.com/photo-${id}?w=1200&q=80&fit=crop`;
+};
+
 const escapeHtml = (s) =>
   String(s ?? '')
     .replace(/&/g, '&amp;')
@@ -99,7 +132,7 @@ function renderCard(article) {
   const timeText = article.readTime ? `${article.readTime} min` : '';
   const meta = [dateText, timeText].filter(Boolean).join(' · ');
   const href = article.slug ? `/articles/${escapeAttr(article.slug)}` : '#';
-  const cover = article.cover || 'https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=1200&q=80&fit=crop';
+  const cover = article.cover || pickNebulaCover(article.slug || article.id || article.title);
 
   return `      <a href="${href}" class="acard" data-phase="${phase}">
         <div class="acard-img">
