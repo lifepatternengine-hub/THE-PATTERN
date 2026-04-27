@@ -299,15 +299,18 @@ function renderArticlePage(template, article) {
 // ── Main ─────────────────────────────────────────────────────────────
 
 async function main() {
-  const indexTemplatePath = join(ROOT, 'articles.template.html');
+  const articlesIndexTemplatePath = join(ROOT, 'articles.template.html');
   const articleTemplatePath = join(ROOT, 'article.template.html');
-  const indexOutPath = join(ROOT, 'articles.html');
+  const homeTemplatePath = join(ROOT, 'index.template.html');
+  const articlesIndexOutPath = join(ROOT, 'articles.html');
+  const homeOutPath = join(ROOT, 'index.html');
   const dataPath = join(ROOT, '_articles.json');
   const articlesDir = join(ROOT, 'articles');
 
-  const [indexTemplate, articleTemplate] = await Promise.all([
-    readFile(indexTemplatePath, 'utf8'),
+  const [articlesIndexTemplate, articleTemplate, homeTemplate] = await Promise.all([
+    readFile(articlesIndexTemplatePath, 'utf8'),
     readFile(articleTemplatePath, 'utf8'),
+    readFile(homeTemplatePath, 'utf8'),
   ]);
 
   let articles = [];
@@ -319,9 +322,20 @@ async function main() {
 
   assignCovers(articles);
 
-  // Index
+  // Articles index page (all)
   const cardsHtml = articles.map(renderCard).join('\n');
-  await writeFile(indexOutPath, indexTemplate.replace('<!--CARDS-->', cardsHtml), 'utf8');
+  await writeFile(
+    articlesIndexOutPath,
+    articlesIndexTemplate.replace('<!--CARDS-->', cardsHtml),
+    'utf8',
+  );
+
+  // Homepage (latest 3 — articles arrive sorted by Published desc)
+  const home3 = articles.slice(0, 3);
+  const homeCardsHtml = home3.length > 0
+    ? home3.map(renderCard).join('\n')
+    : '      <div class="acard-empty">More soon — check back next Tuesday.</div>';
+  await writeFile(homeOutPath, homeTemplate.replace('<!--HOME_CARDS-->', homeCardsHtml), 'utf8');
 
   // Per-article pages
   if (articles.length > 0) {
@@ -345,7 +359,7 @@ async function main() {
     'utf8',
   );
   console.log(
-    `[build-articles] Rendered ${articles.length} article(s) → articles.html + articles/<slug>.html`,
+    `[build-articles] Rendered ${articles.length} article(s) → articles.html + articles/<slug>.html, ${home3.length} on home`,
   );
 }
 

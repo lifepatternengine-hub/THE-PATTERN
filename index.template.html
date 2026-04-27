@@ -381,57 +381,98 @@
     border-top: 1px solid var(--rule); padding-top: 24px;
   }
 
-  /* ── ARTICLES CAROUSEL ── */
-  .art-carousel-wrap { position: relative; overflow: hidden; }
-  .art-arrow {
-    font-family: var(--mono); font-size: 14px; font-weight: 300;
-    color: var(--fg-dim); background: none; border: 1px solid var(--rule);
-    width: 32px; height: 32px; cursor: pointer; display: flex;
-    align-items: center; justify-content: center;
-    transition: color 0.2s, border-color 0.2s;
-  }
-  .art-arrow:hover { color: var(--fg); border-color: var(--fg-dim); }
-  .art-arrow:disabled { opacity: 0.25; cursor: default; }
-  .art-dots {
-    display: none; justify-content: center; gap: 8px;
-    padding: 20px 0;
-  }
-  .art-dot {
-    width: 5px; height: 5px; border-radius: 50%;
-    background: var(--fg-muted); border: none; cursor: pointer;
-    padding: 0; transition: background 0.2s, transform 0.2s;
-  }
-  .art-dot.active { background: var(--fg); transform: scale(1.4); }
-
   /* ── ARTICLES ── */
-  .articles-grid {
-    display: grid; grid-template-columns: 1fr 1fr 1fr;
+  .acards-home {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 32px 22px;
+    padding: 32px 0 8px;
     border-top: 1px solid var(--rule);
+    margin-top: 24px;
   }
-  .art-card {
-    padding: 48px 40px; border-right: 1px solid var(--rule);
-    text-decoration: none; color: inherit; display: block;
-    transition: background 0.25s; cursor: pointer;
+  .acard {
+    text-decoration: none; color: inherit;
+    display: flex; flex-direction: column;
+    position: relative; overflow: hidden;
+    background: rgba(20,18,20,0.55);
+    backdrop-filter: blur(14px) saturate(1.05);
+    -webkit-backdrop-filter: blur(14px) saturate(1.05);
+    border: 1px solid rgba(255,252,248,0.06);
+    border-radius: 4px;
+    box-shadow:
+      0 1px 0 rgba(255,252,248,0.04) inset,
+      0 30px 60px -30px rgba(0,0,0,0.55);
+    transition: transform 0.7s cubic-bezier(0.22,1,0.36,1),
+                background 0.6s ease,
+                border-color 0.6s ease,
+                box-shadow 0.7s cubic-bezier(0.22,1,0.36,1);
   }
-  .art-card:last-child { border-right: none; }
-  .art-card:hover { background: rgba(240,235,224,0.025); }
-  .art-ptag {
-    font-size: 8px; letter-spacing: 0.22em; text-transform: uppercase;
-    color: var(--accent); margin-bottom: 18px;
+  .acard:hover {
+    transform: translateY(-6px);
+    background: rgba(28,24,28,0.72);
+    border-color: rgba(255,252,248,0.12);
+    box-shadow:
+      0 1px 0 rgba(255,252,248,0.06) inset,
+      0 40px 80px -28px rgba(0,0,0,0.7);
+  }
+  .acard-img {
+    position: relative; aspect-ratio: 4 / 3;
+    overflow: hidden; background: #1a1719; margin: 0;
+  }
+  .acard-img::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 55%, rgba(8,7,8,0.55) 100%);
+    pointer-events: none;
+  }
+  .acard-img img {
+    width: 100%; height: 100%; object-fit: cover;
+    transition: transform 1.4s cubic-bezier(0.22,1,0.36,1), filter 0.8s ease;
+    filter: saturate(0.92) brightness(0.94);
+  }
+  .acard:hover .acard-img img { transform: scale(1.06); filter: saturate(1) brightness(1); }
+  .acard-phase {
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.20em;
+    text-transform: uppercase; color: var(--accent);
+    margin: 18px 18px 10px;
     display: flex; align-items: center; gap: 8px;
+    transition: color 0.5s ease;
   }
-  .art-ptag::before { content: ''; width: 12px; height: 1px; background: var(--accent); }
-  .art-title {
-    font-family: var(--serif); font-size: 22px; font-weight: 300;
-    line-height: 1.25; margin-bottom: 14px;
+  .acard-phase::before { content: ''; width: 12px; height: 1px; background: var(--accent); }
+  .acard:hover .acard-phase { color: var(--accent-bright); }
+  .acard:hover .acard-phase::before { background: var(--accent-bright); }
+  .acard-title {
+    font-family: var(--serif); font-size: 18px; font-weight: 300;
+    line-height: 1.28; letter-spacing: 0.005em;
+    color: var(--fg); text-wrap: pretty;
+    margin: 0 18px 12px;
   }
-  .art-excerpt {
-    font-size: 11px; line-height: 1.85; color: var(--fg-dim); margin-bottom: 28px;
+  .acard-title em { font-style: normal; color: var(--fg-dim); }
+  .acard-excerpt {
+    font-size: 12px; line-height: 1.8; color: var(--fg-dim);
+    margin: 0 18px 18px; flex: 1;
   }
-  .art-meta { display: flex; justify-content: space-between; align-items: center; }
-  .art-read { font-size: 8px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg-muted); transition: color 0.2s; }
-  .art-card:hover .art-read { color: var(--fg-dim); }
-  .art-time { font-size: 8px; letter-spacing: 0.12em; color: var(--fg-muted); }
+  .acard-meta {
+    display: flex; justify-content: space-between; align-items: center;
+    margin: 0 18px;
+    padding: 14px 0 18px; border-top: 1px solid var(--rule);
+  }
+  .acard-read {
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--fg-muted);
+    display: inline-flex; align-items: center; gap: 8px;
+    transition: color 0.5s ease;
+  }
+  .acard-read .ar { display: inline-block; transition: transform 0.7s cubic-bezier(0.22,1,0.36,1); }
+  .acard:hover .acard-read { color: var(--fg); }
+  .acard:hover .acard-read .ar { transform: translateX(6px); }
+  .acard-time {
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em;
+    color: var(--fg-muted); text-transform: uppercase;
+  }
+  .acard-empty {
+    grid-column: 1 / -1; padding: 56px 0; text-align: center;
+    font-family: var(--serif); font-style: italic;
+    color: var(--fg-dim); font-size: 22px;
+  }
 
   /* ── NIGHT SKY BAND ── */
   .sky-band {
@@ -802,17 +843,8 @@
     .dstat-num { font-size: 32px; }
     .btn-primary { width: 100%; text-align: center; display: flex; align-items: center; justify-content: center; }
 
-    /* Articles — mobile carousel */
-    .art-carousel-wrap { overflow: hidden; padding: 0 20px; }
-    .articles-grid {
-      grid-template-columns: repeat(3, 100%) !important;
-      gap: 0 !important;
-      transition: transform 0.4s cubic-bezier(0.22,1,0.36,1);
-      border-top: none !important;
-    }
-    .art-card { border-right: none !important; border-bottom: 1px solid var(--rule) !important; padding: 32px 0 !important; }
-    .art-dots { display: flex; }
-    .art-arrow { display: none; }
+    /* Articles — stack on mobile */
+    .acards-home { grid-template-columns: 1fr; gap: 24px; padding: 24px 0 8px; }
 
     /* Sky band */
     .sky-headline { font-size: clamp(28px, 8vw, 44px); margin-bottom: 16px; }
@@ -1316,36 +1348,12 @@
 <section id="articles">
   <div class="wrap">
     <div class="section-head">
-      <span class="stag">Articles — One per phase</span>
-      <div style="display:flex;align-items:center;gap:16px;">
-        <button class="art-arrow" id="art-prev" aria-label="Previous">←</button>
-        <button class="art-arrow" id="art-next" aria-label="Next">→</button>
-        <a href="/articles" class="stag-link">All articles →</a>
-      </div>
+      <span class="stag">Articles — Latest</span>
+      <a href="/articles" class="stag-link">All articles →</a>
     </div>
-  </div>
-  <div class="art-carousel-wrap">
-    <div class="articles-grid" id="art-track">
-      <a href="#" class="art-card reveal">
-        <div class="art-ptag">Phase 01 · Friction</div>
-        <h3 class="art-title">The High Performer's Paradox: Why You're Paralyzed Despite Outward Productivity</h3>
-        <p class="art-excerpt">A nervous-system state that lets senior professionals execute flawlessly by day while collapsing internally — frequently misdiagnosed as burnout or depression.</p>
-        <div class="art-meta"><span class="art-read">Read →</span><span class="art-time">10 min</span></div>
-      </a>
-      <a href="#" class="art-card reveal" style="transition-delay:0.1s">
-        <div class="art-ptag">Phase 02 · Dissolution</div>
-        <h3 class="art-title">The Job Ate the Person: Why Your Title Is the Only Answer You Have</h3>
-        <p class="art-excerpt">If losing your job would cost you your sense of self, you don't have a career problem. You have a single point of failure.</p>
-        <div class="art-meta"><span class="art-read">Read →</span><span class="art-time">9 min</span></div>
-      </a>
-      <a href="#" class="art-card reveal" style="transition-delay:0.2s">
-        <div class="art-ptag">Phase 03 · Reconstruction</div>
-        <h3 class="art-title">The Quiet Dissolution: When a Long Career Stops Fitting</h3>
-        <p class="art-excerpt">When your job stops fitting but you can't tell if you're burned out, bored, or disappearing — the distinction matters more than you think.</p>
-        <div class="art-meta"><span class="art-read">Read →</span><span class="art-time">12 min</span></div>
-      </a>
+    <div class="acards-home" id="home-cards">
+<!--HOME_CARDS-->
     </div>
-    <div class="art-dots" id="art-dots"></div>
   </div>
 </section>
 
@@ -1532,56 +1540,6 @@ const nav = document.getElementById('nav');
 window.addEventListener('scroll', () => {
   nav.classList.toggle('scrolled', window.scrollY > 60);
 });
-
-// ── ARTICLE CAROUSEL ──
-(function() {
-  const track = document.getElementById('art-track');
-  const dotsEl = document.getElementById('art-dots');
-  const prevBtn = document.getElementById('art-prev');
-  const nextBtn = document.getElementById('art-next');
-  if (!track) return;
-
-  const cards = track.querySelectorAll('.art-card');
-  const total = cards.length;
-  let current = 0;
-  let isMobile = window.innerWidth < 768;
-
-  // Build dots
-  cards.forEach((_, i) => {
-    const dot = document.createElement('button');
-    dot.className = 'art-dot' + (i === 0 ? ' active' : '');
-    dot.addEventListener('click', () => goTo(i));
-    dotsEl.appendChild(dot);
-  });
-
-  function goTo(n) {
-    current = Math.max(0, Math.min(total - 1, n));
-    if (isMobile) {
-      track.style.transform = `translateX(${-current * 100}%)`;
-    }
-    dotsEl.querySelectorAll('.art-dot').forEach((d, i) => d.classList.toggle('active', i === current));
-    prevBtn.disabled = current === 0;
-    nextBtn.disabled = current === total - 1;
-  }
-
-  prevBtn.addEventListener('click', () => goTo(current - 1));
-  nextBtn.addEventListener('click', () => goTo(current + 1));
-
-  // Touch swipe
-  let startX = 0;
-  track.addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, { passive: true });
-  track.addEventListener('touchend', e => {
-    const dx = e.changedTouches[0].clientX - startX;
-    if (Math.abs(dx) > 40) goTo(dx < 0 ? current + 1 : current - 1);
-  }, { passive: true });
-
-  window.addEventListener('resize', () => {
-    isMobile = window.innerWidth < 768;
-    if (!isMobile) track.style.transform = '';
-  });
-
-  goTo(0);
-})();
 
 // ── SUBSCRIBE FORM ──
 (function() {
