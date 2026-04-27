@@ -375,7 +375,7 @@
 
 <!-- ═══ ARTICLE HERO ═══ -->
 <section class="article-hero">
-  <div class="article-hero-bg" id="ah-bg"></div>
+  <div class="article-hero-bg loaded" id="ah-bg" style="background-image:url('<!--ARTICLE_COVER-->')"></div>
   <div class="article-hero-dim"></div>
   <canvas id="ah-canvas"></canvas>
   <div class="article-hero-nebula"></div>
@@ -460,13 +460,6 @@ function createStarfield(canvas, count) {
 }
 createStarfield(document.getElementById('ah-canvas'), 240);
 createStarfield(document.getElementById('cta-canvas'), 180);
-
-const ahBg = document.getElementById('ah-bg');
-const coverUrl = '<!--ARTICLE_COVER-->';
-ahBg.style.backgroundImage = "url('" + coverUrl + "')";
-const img = new Image();
-img.onload = () => ahBg.classList.add('loaded');
-img.src = coverUrl;
 
 const hamburger = document.getElementById('nav-hamburger');
 const drawer = document.getElementById('mobile-drawer');
