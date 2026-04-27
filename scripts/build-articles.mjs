@@ -121,7 +121,12 @@ async function main() {
   const dataPath = join(ROOT, '_articles.json');
 
   const template = await readFile(templatePath, 'utf8');
-  const articles = await fetchPublishedArticles();
+  let articles = [];
+  try {
+    articles = await fetchPublishedArticles();
+  } catch (err) {
+    console.warn('[build-articles] Notion fetch failed — shipping empty state:', err.message);
+  }
   const cardsHtml = articles.map(renderCard).join('\n');
   const html = template.replace('<!--CARDS-->', cardsHtml);
 
